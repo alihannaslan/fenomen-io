@@ -7,6 +7,8 @@ import { NewReleasePromo } from "@/components/new-release-promo"
 import { FAQSection } from "@/components/faq-section"
 import { PricingSection } from "@/components/pricing-section"
 import { StickyFooter } from "@/components/sticky-footer"
+import Image from "next/image"
+
 
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -53,21 +55,24 @@ export default function Home() {
 
       {/* Desktop Header */}
       <header
-        className={`sticky top-4 z-[9999] mx-auto hidden w-full flex-row items-center justify-between self-start rounded-full bg-background/80 md:flex backdrop-blur-sm border border-border/50 shadow-lg transition-all duration-300 ${
-          isScrolled ? "max-w-3xl px-2" : "max-w-5xl px-4"
-        } py-2`}
+        className={`sticky top-4 z-[9999] mx-auto hidden w-full flex-row items-center justify-between self-start rounded-full bg-background/80 md:flex backdrop-blur-sm border border-border/50 shadow-lg transition-all duration-300 ${isScrolled ? "max-w-3xl px-2" : "max-w-5xl px-4"
+          } py-2`}
         style={{ willChange: "transform", transform: "translateZ(0)", backfaceVisibility: "hidden", perspective: "1000px" }}
       >
         {/* Marka */}
         <a
-          className={`z-50 flex items-center justify-center gap-2 transition-all duration-300 ${isScrolled ? "ml-4" : ""}`}
+          className={`z-50 flex items-center justify-center gap-2 transition-all duration-300 ${isScrolled ? "ml-4" : ""
+            }`}
           href="/"
           aria-label="fenomen — hesabını büyüten yapay zekâ"
         >
-          <div className="size-8 w-8 rounded-md bg-gradient-to-b from-primary to-primary/80 text-primary-foreground grid place-items-center font-bold">
-            F
-          </div>
-          <span className="font-semibold">fenomen</span>
+          <Image
+            src="/logo.png"
+            alt="Fenomen logo"
+            width={100}   // 8 * 4px = 32px
+            height={32}
+            className="rounded-md"
+          />
         </a>
 
         {/* Menü */}
@@ -154,11 +159,20 @@ export default function Home() {
 
       {/* Mobile Header */}
       <header className="sticky top-4 z-[9999] mx-4 flex w-auto flex-row items-center justify-between rounded-full bg-background/80 backdrop-blur-sm border border-border/50 shadow-lg md:hidden px-4 py-3">
-        <a className="flex items-center justify-center gap-2" href="/" aria-label="fenomen anasayfa">
-          <div className="size-7 w-7 rounded-md bg-gradient-to-b from-primary to-primary/80 text-primary-foreground grid place-items-center font-bold">
-            F
-          </div>
-          <span className="font-semibold">fenomen</span>
+        {/* Marka */}
+        <a
+          className={`z-50 flex items-center justify-center gap-2 transition-all duration-300 ${isScrolled ? "ml-4" : ""
+            }`}
+          href="/"
+          aria-label="fenomen — hesabını büyüten yapay zekâ"
+        >
+          <Image
+            src="/logo.png"
+            alt="Fenomen logo"
+            width={100}   // 8 * 4px = 32px
+            height={32}
+            className="rounded-md"
+          />
         </a>
 
         <button
@@ -222,21 +236,23 @@ export default function Home() {
         </div>
       )}
 
-      <Hero />
-      <div id="features">
-        <Features />
-      </div>
-      <div id="pricing">
-        <PricingSection />
-      </div>
-      <div id="testimonials">
-        <TestimonialsSection />
-      </div>
-      <NewReleasePromo />
-      <div id="faq">
-        <FAQSection />
-      </div>
-      <StickyFooter />
-    </div>
+
+  <Hero />
+  <div id="features">
+    <Features />
+  </div>
+  <div id="pricing">
+    <PricingSection />
+  </div>
+  <div id="testimonials">
+    <TestimonialsSection />
+  </div>
+  <NewReleasePromo />
+  <div id="faq">
+    <FAQSection />
+  </div>
+  <StickyFooter />
+</div>
+
   )
 }

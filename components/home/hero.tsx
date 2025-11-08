@@ -28,8 +28,11 @@ export default function Hero() {
               transition={{ duration: 0.5 }}
               className="mb-8"
             >
-              <Badge variant="secondary" className="inline-flex items-center gap-2 px-4 py-2 text-sm">
-                <Sparkles className="h-4 w-4" />
+              <Badge
+                variant="secondary"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-white text-black border border-gray-200 shadow-sm"
+              >
+                <Sparkles className="h-4 w-4 text-yellow-500" />
                 Yapay zekâ ile viral ol
               </Badge>
             </motion.div>
@@ -47,7 +50,7 @@ export default function Hero() {
               >
                 <span className="block">Yapay Zeka ile</span>
                 <span className="block">
-                <strong>Viral Ol</strong> 
+                  <strong>Viral Ol</strong>
                 </span>
               </h1>
             </motion.div>
@@ -59,7 +62,7 @@ export default function Hero() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="mx-auto mb-12 max-w-2xl text-lg text-muted-foreground"
             >
-              <b>fenomen</b>; profilini analiz eder, <b>profil skoru</b> çıkarır, kullanman gereken
+              Profilini analiz eder, <b>profil skoru</b> çıkarır, kullanman gereken
               <b> hook</b>’ları ve çekime hazır <b>senaryoları</b> üretir. Aylık <b>AI raporları</b> ve
               <b> haftalık içerik planı</b> ile her ay daha iyi sonuç almana yardımcı olur.
             </motion.p>
