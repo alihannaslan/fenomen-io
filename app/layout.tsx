@@ -1,29 +1,32 @@
 import type React from "react"
-import "@/styles/globals.css"
-import { Inter } from "next/font/google"
 import type { Metadata } from "next"
-import { ThemeProvider } from "@/components/theme-provider"
-
-const inter = Inter({ subsets: ["latin"] })
+import { GeistSans } from "geist/font/sans"
+import { GeistMono } from "geist/font/mono"
+import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "SaaSify - Streamline Your Workflow",
-  description: "Boost productivity, reduce costs, and scale your business with our all-in-one SaaS platform.",
-    generator: 'v0.app'
+  title: "v0 App",
+  description: "Created with v0",
+  generator: "v0.app",
 }
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
-        </ThemeProvider>
-      </body>
+    <html lang="en" className="dark">
+      <head>
+        <style>{`
+html {
+  font-family: ${GeistSans.style.fontFamily};
+  --font-sans: ${GeistSans.variable};
+  --font-mono: ${GeistMono.variable};
+}
+        `}</style>
+      </head>
+      <body className="dark">{children}</body>
     </html>
   )
 }
