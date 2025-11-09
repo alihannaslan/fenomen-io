@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
@@ -9,6 +8,15 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+
+// API dönüşünü tipleyelim (strict mod için gerekli)
+type SignupResponse = {
+  error?: string
+  message?: string
+  redirect?: string
+  userId?: string
+  [key: string]: unknown
+}
 
 export default function SignupPage() {
   const router = useRouter()
@@ -29,7 +37,7 @@ export default function SignupPage() {
     setError("")
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError("")
 
@@ -48,9 +56,7 @@ export default function SignupPage() {
     try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
@@ -58,15 +64,20 @@ export default function SignupPage() {
         }),
       })
 
-      const data = await response.json()
+      // strict TS: unknown'u tipe dök
+      const data = (await response.json()) as SignupResponse
 
       if (!response.ok) {
-        setError(data.error || "Failed to create account")
+        setError((typeof data.error === "string" && data.error) || "Failed to create account")
         return
       }
 
-      console.log("[v0] Signup successful, redirecting to dashboard")
-      router.push("/dashboard")
+      // API redirect dönerse onu kullan, yoksa dashboard
+      const dest =
+        (typeof data.redirect === "string" && data.redirect) || "/dashboard"
+
+      console.log("[v0] Signup successful, redirecting to:", dest)
+      router.push(dest)
     } catch (err) {
       console.error("[v0] Signup error:", err)
       setError("An unexpected error occurred")
@@ -81,14 +92,16 @@ export default function SignupPage() {
         href="/"
         className="absolute top-6 left-6 z-20 text-zinc-400 hover:text-[#e78a53] transition-colors duration-200 flex items-center space-x-2"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
         <span>Back to Home</span>
       </Link>
 
+      {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-black to-zinc-900" />
 
+      {/* Decorative elements */}
       <div className="absolute top-20 right-20 w-72 h-72 bg-[#e78a53]/10 rounded-full blur-3xl" />
       <div className="absolute bottom-20 left-20 w-96 h-96 bg-[#e78a53]/5 rounded-full blur-3xl" />
 
@@ -98,8 +111,9 @@ export default function SignupPage() {
         transition={{ duration: 0.5 }}
         className="relative z-10 w-full max-w-md"
       >
+        {/* Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-6">
+          <Link href="/" className="inline-block mb-6" aria-label="Go to home">
             <div className="flex items-center justify-center space-x-2">
               <svg
                 fill="currentColor"
@@ -117,6 +131,7 @@ export default function SignupPage() {
           <p className="text-zinc-400">Join thousands of developers building with v0</p>
         </div>
 
+        {/* Form */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -124,12 +139,15 @@ export default function SignupPage() {
           className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-2xl p-8"
         >
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
+            <div
+              role="alert"
+              className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm"
+            >
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div className="space-y-2">
               <Label htmlFor="name" className="text-white">
                 Full Name
@@ -141,6 +159,7 @@ export default function SignupPage() {
                 placeholder="Enter your full name"
                 value={formData.name}
                 onChange={handleChange}
+                autoComplete="name"
                 className="bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-[#e78a53] focus:ring-[#e78a53]/20"
                 required
               />
@@ -157,6 +176,7 @@ export default function SignupPage() {
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={handleChange}
+                autoComplete="email"
                 className="bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-[#e78a53] focus:ring-[#e78a53]/20"
                 required
               />
@@ -173,8 +193,10 @@ export default function SignupPage() {
                 placeholder="Create a password"
                 value={formData.password}
                 onChange={handleChange}
+                autoComplete="new-password"
                 className="bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-[#e78a53] focus:ring-[#e78a53]/20"
                 required
+                minLength={6}
               />
             </div>
 
@@ -189,8 +211,10 @@ export default function SignupPage() {
                 placeholder="Confirm your password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
+                autoComplete="new-password"
                 className="bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-[#e78a53] focus:ring-[#e78a53]/20"
                 required
+                minLength={6}
               />
             </div>
 
@@ -216,6 +240,7 @@ export default function SignupPage() {
             <Button
               type="submit"
               disabled={isLoading}
+              aria-busy={isLoading}
               className="w-full bg-[#e78a53] hover:bg-[#e78a53]/90 text-white font-medium py-3 rounded-xl transition-colors"
             >
               {isLoading ? "Creating account..." : "Create account"}
@@ -232,6 +257,7 @@ export default function SignupPage() {
           </div>
         </motion.div>
 
+        {/* Social Login (placeholder) */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -249,12 +275,14 @@ export default function SignupPage() {
 
           <div className="mt-6 grid grid-cols-2 gap-3">
             <Button
+              type="button"
               variant="outline"
               className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-white hover:text-black hover:border-white transition-all duration-200 group"
             >
               <svg
                 className="w-5 h-5 mr-2 text-zinc-300 group-hover:text-black transition-colors duration-200"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   fill="currentColor"
@@ -276,6 +304,7 @@ export default function SignupPage() {
               Google
             </Button>
             <Button
+              type="button"
               variant="outline"
               className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-white hover:text-black hover:border-white transition-all duration-200 group"
             >
@@ -283,6 +312,7 @@ export default function SignupPage() {
                 className="w-5 h-5 mr-2 text-zinc-300 group-hover:text-black transition-colors duration-200"
                 fill="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
               </svg>
