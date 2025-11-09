@@ -1,14 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import type { User } from "@/lib/auth"
+// lib/auth artık User export etmiyor; props tipini lokal tanımlıyoruz
+type DashboardUser = {
+  email: string
+  name?: string
+  id?: string | number
+  created_at?: string | number | Date
+}
 
 interface DashboardClientProps {
-  user: User
+  user: DashboardUser
 }
 
 export default function DashboardClient({ user }: DashboardClientProps) {
@@ -17,13 +23,8 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
-
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      })
-
-      console.log("[v0] Logout successful, redirecting to home")
+      await fetch("/api/auth/logout", { method: "POST" })
       router.push("/")
       router.refresh()
     } catch (error) {
@@ -32,11 +33,15 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     }
   }
 
-  const formattedDate = new Date(user.created_at).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
+  // created_at opsiyonel olabilir; güvenli formatla
+  const formattedDate = useMemo(() => {
+    if (!user?.created_at) return "—"
+    const d = new Date(user.created_at)
+    if (isNaN(d.getTime())) return "—"
+    return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+  }, [user?.created_at])
+
+  const safeUserId = user?.id ?? "—"
 
   return (
     <div className="min-h-screen bg-black">
@@ -81,7 +86,9 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             {/* Welcome Section */}
             <div className="mb-8">
-              <h1 className="text-4xl font-bold text-white mb-2">Welcome back{user.name ? `, ${user.name}` : ""}!</h1>
+              <h1 className="text-4xl font-bold text-white mb-2">
+                Welcome back{user?.name ? `, ${user.name}` : ""}!
+              </h1>
               <p className="text-zinc-400 text-lg">Here's what's happening with your account today.</p>
             </div>
 
@@ -96,7 +103,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-zinc-400 text-sm mb-1">User ID</p>
-                      <p className="text-2xl font-bold text-white">#{user.id}</p>
+                      <p className="text-2xl font-bold text-white">#{safeUserId}</p>
                     </div>
                     <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,7 +182,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between py-3 border-b border-zinc-800">
                     <span className="text-zinc-400">Full Name</span>
-                    <span className="text-white font-medium">{user.name || "Not provided"}</span>
+                    <span className="text-white font-medium">{user?.name || "Not provided"}</span>
                   </div>
 
                   <div className="flex items-center justify-between py-3 border-b border-zinc-800">
@@ -185,7 +192,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
                   <div className="flex items-center justify-between py-3 border-b border-zinc-800">
                     <span className="text-zinc-400">User ID</span>
-                    <span className="text-white font-medium">#{user.id}</span>
+                    <span className="text-white font-medium">#{safeUserId}</span>
                   </div>
 
                   <div className="flex items-center justify-between py-3">
@@ -217,12 +224,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center flex-shrink-0">
                     <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" />
                     </svg>
                   </div>
                   <div>
@@ -236,12 +238,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
                     <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586l5.707 5.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
                   <div>
