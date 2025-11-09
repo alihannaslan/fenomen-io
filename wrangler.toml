@@ -1,9 +1,5 @@
 name = "fenomen-io"
-compatibility_date = "2024-11-01"
+compatibility_date = "2025-11-08"
 
-[[kv_namespaces]]
-binding = "USERS"
-id = "c831039855564c16818cfc9d988140723"
-
-[pages]
+# Pages için zorunlu: Next on Pages'ın ürettiği statik çıktı klasörü
 pages_build_output_dir = ".vercel/output/static"
