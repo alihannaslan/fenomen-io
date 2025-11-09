@@ -16,17 +16,15 @@ interface PixelCardProps {
   color: string
 }
 
-export function PixelCard({ label, canvasProps, number, icon, desc, color }: PixelCardProps) {
+function PixelCard({ label, canvasProps, number, icon, desc, color }: PixelCardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    // Simple animated pixel effect
     let animationId: number
     let time = 0
 
@@ -53,12 +51,7 @@ export function PixelCard({ label, canvasProps, number, icon, desc, color }: Pix
     }
 
     animate()
-
-    return () => {
-      if (animationId) {
-        cancelAnimationFrame(animationId)
-      }
-    }
+    return () => cancelAnimationFrame(animationId)
   }, [canvasProps])
 
   return (
@@ -78,3 +71,5 @@ export function PixelCard({ label, canvasProps, number, icon, desc, color }: Pix
     </div>
   )
 }
+
+export default PixelCard
