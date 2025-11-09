@@ -1,3 +1,5 @@
+/// <reference types="@cloudflare/workers-types" />
+
 export const onRequestPost: PagesFunction<{ USERS: KVNamespace }> = async (ctx) => {
   try {
     const body = await ctx.request.json() as { email?: string; password?: string; name?: string }

@@ -1,3 +1,5 @@
+/// <reference types="@cloudflare/workers-types" />
+
 import { jwtVerify } from "jose"
 const cookieName = "auth_token"
 

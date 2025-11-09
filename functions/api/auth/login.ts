@@ -1,3 +1,5 @@
+/// <reference types="@cloudflare/workers-types" />
+
 import { SignJWT } from "jose"
 
 const cookieName = "auth_token"
