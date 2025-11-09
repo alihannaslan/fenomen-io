@@ -1,20 +1,31 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-// lib/auth artık User export etmiyor; props tipini lokal tanımlıyoruz
+
+// Bu tip, JWT akışında gelebilecek alanları kapsayacak şekilde esnek tutuldu.
+// Zorunlu tek alan email; diğerleri opsiyonel.
 type DashboardUser = {
   email: string
-  name?: string
-  id?: string | number
-  created_at?: string | number | Date
+  name?: string | null
+  id?: string | number | null
+  createdAt?: string | number | Date | null
+  created_at?: string | null // bazı akışlarda snake_case gelebilir
 }
 
 interface DashboardClientProps {
   user: DashboardUser
+}
+
+function formatMaybeDate(user: DashboardUser): string {
+  const raw = user.createdAt ?? user.created_at
+  if (!raw) return "—"
+  const d = raw instanceof Date ? raw : new Date(raw as any)
+  if (isNaN(d.getTime())) return "—"
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 }
 
 export default function DashboardClient({ user }: DashboardClientProps) {
@@ -27,21 +38,14 @@ export default function DashboardClient({ user }: DashboardClientProps) {
       await fetch("/api/auth/logout", { method: "POST" })
       router.push("/")
       router.refresh()
-    } catch (error) {
-      console.error("[v0] Logout error:", error)
+    } catch (err) {
+      console.error("[v0] Logout error:", err)
       setIsLoggingOut(false)
     }
   }
 
-  // created_at opsiyonel olabilir; güvenli formatla
-  const formattedDate = useMemo(() => {
-    if (!user?.created_at) return "—"
-    const d = new Date(user.created_at)
-    if (isNaN(d.getTime())) return "—"
-    return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-  }, [user?.created_at])
-
-  const safeUserId = user?.id ?? "—"
+  const formattedDate = formatMaybeDate(user)
+  const userId = user.id ?? "—"
 
   return (
     <div className="min-h-screen bg-black">
@@ -87,43 +91,31 @@ export default function DashboardClient({ user }: DashboardClientProps) {
             {/* Welcome Section */}
             <div className="mb-8">
               <h1 className="text-4xl font-bold text-white mb-2">
-                Welcome back{user?.name ? `, ${user.name}` : ""}!
+                Welcome back{user.name ? `, ${user.name}` : ""}!
               </h1>
               <p className="text-zinc-400 text-lg">Here's what's happening with your account today.</p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
                 <Card className="bg-zinc-900/50 border-zinc-800 p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-zinc-400 text-sm mb-1">User ID</p>
-                      <p className="text-2xl font-bold text-white">#{safeUserId}</p>
+                      <p className="text-2xl font-bold text-white">#{userId}</p>
                     </div>
                     <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
                   </div>
                 </Card>
               </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
                 <Card className="bg-zinc-900/50 border-zinc-800 p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -132,23 +124,15 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                     </div>
                     <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </div>
                 </Card>
               </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-              >
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
                 <Card className="bg-zinc-900/50 border-zinc-800 p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -157,12 +141,8 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                     </div>
                     <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
                   </div>
@@ -171,18 +151,14 @@ export default function DashboardClient({ user }: DashboardClientProps) {
             </div>
 
             {/* User Info Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
               <Card className="bg-zinc-900/50 border-zinc-800 p-8">
                 <h2 className="text-2xl font-bold text-white mb-6">Account Information</h2>
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between py-3 border-b border-zinc-800">
                     <span className="text-zinc-400">Full Name</span>
-                    <span className="text-white font-medium">{user?.name || "Not provided"}</span>
+                    <span className="text-white font-medium">{user.name || "Not provided"}</span>
                   </div>
 
                   <div className="flex items-center justify-between py-3 border-b border-zinc-800">
@@ -192,7 +168,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
                   <div className="flex items-center justify-between py-3 border-b border-zinc-800">
                     <span className="text-zinc-400">User ID</span>
-                    <span className="text-white font-medium">#{safeUserId}</span>
+                    <span className="text-white font-medium">#{userId}</span>
                   </div>
 
                   <div className="flex items-center justify-between py-3">
@@ -203,10 +179,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
                 <div className="mt-8 flex gap-4">
                   <Button className="bg-[#e78a53] hover:bg-[#e78a53]/90 text-white">Edit Profile</Button>
-                  <Button
-                    variant="outline"
-                    className="bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white"
-                  >
+                  <Button variant="outline" className="bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white">
                     Settings
                   </Button>
                 </div>
@@ -224,7 +197,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center flex-shrink-0">
                     <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                   </div>
                   <div>
@@ -238,7 +211,8 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
                     <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586l5.707 5.707V19a2 2 0 01-2 2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
                   <div>

@@ -7,22 +7,15 @@ import DashboardClient from "@/components/dashboard-client"
 export const runtime = "edge"
 export const dynamic = "force-dynamic"
 
-// DashboardClient'in beklediği minimal kullanıcı tipi
-type DashboardUser = {
-  email: string
-  name?: string | null
-}
-
 export default async function DashboardPage() {
-  // JWT cookie'den kullanıcıyı oku (SSR tarafında)
   const user = await getCurrentUser().catch(() => null)
 
-  // Kullanıcı yoksa veya email yoksa login'e yönlendir
   if (!user || !("email" in user) || !user.email) {
     redirect("/login")
   }
 
-  const clientUser: DashboardUser = {
+  // Tip çakışmasını önlemek için burada yerel tip TANIMLAMIYORUZ.
+  const clientUser = {
     email: user.email as string,
     name: "name" in user ? (user as any).name ?? null : null,
   }
