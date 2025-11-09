@@ -9,10 +9,10 @@ importers:
   .:
     dependencies:
       '@emotion/is-prop-valid':
-        specifier: latest
+        specifier: 1.4.0
         version: 1.4.0
       '@hookform/resolvers':
-        specifier: ^3.10.0
+        specifier: 3.10.0
         version: 3.10.0(react-hook-form@7.66.0(react@18.3.1))
       '@radix-ui/react-accordion':
         specifier: 1.2.2
@@ -99,22 +99,22 @@ importers:
         specifier: 1.3.1
         version: 1.3.1(next@14.2.33(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       autoprefixer:
-        specifier: ^10.4.20
+        specifier: 10.4.21
         version: 10.4.21(postcss@8.5.6)
       bcryptjs:
-        specifier: latest
+        specifier: 3.0.3
         version: 3.0.3
       class-variance-authority:
-        specifier: ^0.7.1
+        specifier: 0.7.1
         version: 0.7.1
       clsx:
-        specifier: ^2.1.1
+        specifier: 2.1.1
         version: 2.1.1
       cmdk:
         specifier: 1.0.4
         version: 1.0.4(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       cobe:
-        specifier: latest
+        specifier: 0.6.5
         version: 0.6.5
       date-fns:
         specifier: 4.1.0
@@ -123,92 +123,89 @@ importers:
         specifier: 8.5.1
         version: 8.5.1(react@18.3.1)
       framer-motion:
-        specifier: latest
+        specifier: 12.23.24
         version: 12.23.24(@emotion/is-prop-valid@1.4.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       geist:
-        specifier: ^1.5.1
+        specifier: 1.5.1
         version: 1.5.1(next@14.2.33(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       input-otp:
         specifier: 1.4.1
         version: 1.4.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       jose:
-        specifier: latest
+        specifier: 6.1.1
         version: 6.1.1
       lucide-react:
-        specifier: ^0.454.0
+        specifier: 0.454.0
         version: 0.454.0(react@18.3.1)
       motion:
-        specifier: latest
+        specifier: 12.23.24
         version: 12.23.24(@emotion/is-prop-valid@1.4.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next:
-        specifier: ^14.2.25
+        specifier: 14.2.33
         version: 14.2.33(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-themes:
-        specifier: latest
+        specifier: 0.4.6
         version: 0.4.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      path:
-        specifier: latest
-        version: 0.12.7
       react:
-        specifier: ^18.2.0
+        specifier: 18.3.1
         version: 18.3.1
       react-day-picker:
         specifier: 9.8.0
         version: 9.8.0(react@18.3.1)
       react-dom:
-        specifier: ^18.2.0
+        specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
       react-hook-form:
-        specifier: ^7.60.0
+        specifier: 7.66.0
         version: 7.66.0(react@18.3.1)
       react-resizable-panels:
-        specifier: ^2.1.7
+        specifier: 2.1.9
         version: 2.1.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       recharts:
         specifier: 2.15.4
         version: 2.15.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       sonner:
-        specifier: ^1.7.4
+        specifier: 1.7.4
         version: 1.7.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       tailwind-merge:
-        specifier: ^2.5.5
+        specifier: 2.6.0
         version: 2.6.0
       tailwindcss-animate:
-        specifier: ^1.0.7
+        specifier: 1.0.7
         version: 1.0.7(tailwindcss@4.1.17)
       vaul:
-        specifier: ^0.9.9
+        specifier: 0.9.9
         version: 0.9.9(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       zod:
         specifier: 3.25.76
         version: 3.25.76
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^4.20251109.0
+        specifier: 4.20251109.0
         version: 4.20251109.0
       '@tailwindcss/postcss':
-        specifier: ^4.1.9
+        specifier: 4.1.17
         version: 4.1.17
       '@types/node':
-        specifier: ^22
+        specifier: 22.19.0
         version: 22.19.0
       '@types/react':
-        specifier: ^19.2.2
+        specifier: 19.2.2
         version: 19.2.2
       '@types/react-dom':
-        specifier: ^19.2.2
+        specifier: 19.2.2
         version: 19.2.2(@types/react@19.2.2)
       postcss:
-        specifier: ^8.5
+        specifier: 8.5.6
         version: 8.5.6
       tailwindcss:
-        specifier: ^4.1.9
+        specifier: 4.1.17
         version: 4.1.17
       tw-animate-css:
         specifier: 1.3.3
         version: 1.3.3
       typescript:
-        specifier: ^5.9.3
+        specifier: 5.9.3
         version: 5.9.3
 
 packages:
@@ -1301,9 +1298,6 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
-  inherits@2.0.3:
-    resolution: {integrity: sha512-x00IRNXNy63jwGkJmzPigoySHbaqpNuzKbBOmzK+g2OdZpQ9w+sxCN+VSB3ja7IAge2OP2qpfxTjeNcyjmW1uw==}
-
   input-otp@1.4.1:
     resolution: {integrity: sha512-+yvpmKYKHi9jIGngxagY9oWiiblPB7+nEO75F2l2o4vs+6vpPZZmUl4tBNYuTCvQjhvEIbdNeJu70bhfYP2nbw==}
     peerDependencies:
@@ -1469,9 +1463,6 @@ packages:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
     engines: {node: '>=0.10.0'}
 
-  path@0.12.7:
-    resolution: {integrity: sha512-aXXC6s+1w7otVF9UletFkFcDsJeO7lSZBPUQhtb5O0xJe8LtYhj/GxldoL09bBj9+ZmE2hNoHqQSFMN5fikh4Q==}
-
   phenomenon@1.6.0:
     resolution: {integrity: sha512-7h9/fjPD3qNlgggzm88cY58l9sudZ6Ey+UmZsizfhtawO6E3srZQXywaNm2lBwT72TbpHYRPy7ytIHeBUD/G0A==}
 
@@ -1488,10 +1479,6 @@ packages:
   postcss@8.5.6:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
-
-  process@0.11.10:
-    resolution: {integrity: sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==}
-    engines: {node: '>= 0.6.0'}
 
   prop-types@15.8.1:
     resolution: {integrity: sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==}
@@ -1676,9 +1663,6 @@ packages:
     resolution: {integrity: sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
-  util@0.10.4:
-    resolution: {integrity: sha512-0Pm9hTQ3se5ll1XihRic3FDIku70C+iHUdT/W926rSgHV5QgXsYbKZN8MSC3tJtSkhuROzvsQjAaFENRXr+19A==}
 
   vaul@0.9.9:
     resolution: {integrity: sha512-7afKg48srluhZwIkaU+lgGtFCUsYBSGOl8vcc8N/M3YQlZFlynHD15AE+pwrYdc826o7nrIND4lL9Y6b9WWZZQ==}
@@ -2744,8 +2728,6 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  inherits@2.0.3: {}
-
   input-otp@1.4.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       react: 18.3.1
@@ -2875,11 +2857,6 @@ snapshots:
 
   object-assign@4.1.1: {}
 
-  path@0.12.7:
-    dependencies:
-      process: 0.11.10
-      util: 0.10.4
-
   phenomenon@1.6.0: {}
 
   picocolors@1.1.1: {}
@@ -2897,8 +2874,6 @@ snapshots:
       nanoid: 3.3.11
       picocolors: 1.1.1
       source-map-js: 1.2.1
-
-  process@0.11.10: {}
 
   prop-types@15.8.1:
     dependencies:
@@ -3061,10 +3036,6 @@ snapshots:
   use-sync-external-store@1.6.0(react@18.3.1):
     dependencies:
       react: 18.3.1
-
-  util@0.10.4:
-    dependencies:
-      inherits: 2.0.3
 
   vaul@0.9.9(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
