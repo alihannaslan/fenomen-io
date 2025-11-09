@@ -10,14 +10,22 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+type LoginResponse = {
+  error?: string
+  message?: string
+  redirect?: string
+  // gerekirse ek alanlar
+  [key: string]: unknown
+}
+
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState<string>("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError("")
     setIsLoading(true)
@@ -25,24 +33,28 @@ export default function LoginPage() {
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       })
 
-      const data = await response.json()
+      // TS strict: json() -> unknown; tipliyoruz
+      const data = (await response.json()) as LoginResponse
 
       if (!response.ok) {
-        setError(data.error || "Failed to sign in")
+        setError((typeof data.error === "string" && data.error) || "Failed to sign in")
         return
       }
 
-      console.log("[v0] Login successful, redirecting to dashboard")
-      router.push("/dashboard")
+      // opsiyonel redirect alanı varsa onu kullan
+      if (typeof data.redirect === "string" && data.redirect.length > 0) {
+        router.push(data.redirect)
+      } else {
+        router.push("/dashboard")
+      }
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred"
       console.error("[v0] Login error:", err)
-      setError("An unexpected error occurred")
+      setError(msg)
     } finally {
       setIsLoading(false)
     }
