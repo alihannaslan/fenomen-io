@@ -1,5 +1,4 @@
 name = "fenomen-io"
-compatibility_date = "2025-11-08"
-
-# Pages için zorunlu: Next on Pages'ın ürettiği statik çıktı klasörü
 pages_build_output_dir = ".vercel/output/static"
+compatibility_date = "2025-11-08"
+compatibility_flags = ["nodejs_compat"]
