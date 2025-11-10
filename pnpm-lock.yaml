@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@cloudflare/workers-types':
-        specifier: latest
-        version: 4.20251109.0
       '@emotion/is-prop-valid':
         specifier: latest
         version: 1.4.0
@@ -183,6 +180,9 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
     devDependencies:
+      '@cloudflare/workers-types':
+        specifier: latest
+        version: 4.20251109.0
       '@tailwindcss/postcss':
         specifier: ^4.1.9
         version: 4.1.17
