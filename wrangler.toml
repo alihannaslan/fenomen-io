@@ -3,9 +3,11 @@ compatibility_date = "2024-01-01"
 pages_build_output_dir = ".next"
 
 [[kv_namespaces]]
-binding = "fenomen-io-users"
-id = "c831039855564c16818cfcd988140723"  # wrangler kv:namespace create "USERS_KV" komutuyla oluşturun
+binding = "USERS_KV"
+id = "BURAYA-KV-NAMESPACE-ID-YAPIŞTIRIN"  # wrangler kv:namespace create "USERS_KV" komutuyla oluşturun
 
 # Production için preview namespace (opsiyonel)
 # preview_id = "BURAYA-PREVIEW-KV-ID"
 
+[vars]
+JWT_SECRET = "super-gizli-jwt-anahtari-production-da-degistir"
