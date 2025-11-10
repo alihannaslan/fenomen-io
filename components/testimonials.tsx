@@ -2,67 +2,58 @@ import { Marquee } from "@/components/magicui/marquee"
 
 const testimonials = [
   {
-    name: "Efsun C.",
-    username: "@efsunbeauty",
-    body:
-      "Fenomen’in yapay zekâ denetimi ilk 3 saniyemdeki zayıflığı net gösterdi. AI hook’larla izlenme oranım iki haftada %42 arttı.",
-    img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+    name: "Ayşe Demir",
+    username: "@ayse.creates",
+    body: "Fenomen raporları sayesinde içerik planımı 2 kat verimli hale getirdim. Hangi saatlerde paylaşım yapmam gerektiğini öğrendim",
+    img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
   },
   {
-    name: "Buket Ö.",
-    username: "@buketlifestyle",
-    body:
-      "AI içerik takvimi ve senaryo üretici sayesinde haftalık üretimim oturdu. 30 günde etkileşimde +%35 gördüm.",
-    img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
-  },
-  {
-    name: "Mert A.",
-    username: "@mert.tech",
-    body:
-      "Trend Radar nişime özel ses ve format öneriyor. Kaydetme/Paylaşım artışı net. Fenomen artık günlük rutinim.",
-    img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
-  },
-  {
-    name: "Elif K.",
-    username: "@elifskincare",
-    body:
-      "AI profil skoru ve benchmark, neyin işe yaradığını somutlaştırdı. Yorumlarda %27 artış, izleyici tutmada ciddi iyileşme.",
-    img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=face",
-  },
-  {
-    name: "Can D.",
-    username: "Growth Manager – D2C",
-    body:
-      "UGC’lerimizi rakiplere karşı kıyaslayıp marka-uygunluk skoruyla onay süreçlerini kısalttık. CPA’da %22 düşüş.",
+    name: "Mehmet Yılmaz",
+    username: "@mehmet_tiktoker",
+    body: "AI analizi sayesinde TikTok hesabım 3 ayda 50k takipçiye ulaştı. Trend önerileri gerçekten işe yarıyor",
     img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
   },
   {
-    name: "Selin R.",
-    username: "@selin.creates",
-    body:
-      "AI senaryo + hook üretici ile içerik üretim sürem yarıya düştü. Reels/TikTok tarafında tutarlılık yakaladım.",
+    name: "Zeynep Kaya",
+    username: "@zeynep.style",
+    body: "Instagram reels stratejim tamamen değişti. Fenomen'in içerik önerileri ile etkileşimlerim %200 arttı",
+    img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=face",
+  },
+  {
+    name: "Can Özdemir",
+    username: "@canozdemir",
+    body: "Aylık raporlar sayesinde hangi içeriklerimin daha iyi performans gösterdiğini görüyorum. Muhteşem bir araç",
+    img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+  },
+  {
+    name: "Elif Arslan",
+    username: "@elif.vlog",
+    body: "Fenomen olmadan önce tamamen rastgele içerik üretiyordum. Şimdi her paylaşım stratejik ve etkili",
+    img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
+  },
+  {
+    name: "Burak Şahin",
+    username: "@burak.fitness",
+    body: "Fitness içeriklerimi optimize ettim ve takipçi kitlem tam hedef kitleme dönüştü. AI önerileri çok isabetli",
+    img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+  },
+  {
+    name: "Selin Aydın",
+    username: "@selin.beauty",
+    body: "Makyaj içeriklerim için en iyi hashtag'leri ve zamanları Fenomen öneriyor. Organik büyüme harika",
     img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face",
   },
   {
-    name: "Deniz T.",
-    username: "@denizvlog",
-    body:
-      "Fenomen’in haftalık raporları hangi seriyi devam ettirmem gerektiğini gösteriyor. Organik büyüme daha öngörülebilir.",
-    img: "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=150&h=150&fit=crop&crop=face",
-  },
-  {
-    name: "Ayşe L.",
-    username: "Ajans Yöneticisi",
-    body:
-      "Beyaz etiket PDF raporlarını müşteri sunumlarında kullanıyoruz. Süreç hızlandı, kararlar veriyle alınıyor.",
+    name: "Emre Koç",
+    username: "@emre.tech",
+    body: "Teknoloji içeriklerim için trend analizi sayesinde viral videolar çekmeye başladım. Kesinlikle öneririm",
     img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face",
   },
   {
-    name: "James W.",
-    username: "@james.tech",
-    body:
-      "AI forecast, hedefe giden yolu netleştiriyor. Yükleme temposunu buna göre ayarlayınca büyüme çizgisi tutuyor.",
-    img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+    name: "Deniz Yıldız",
+    username: "@deniz.food",
+    body: "Yemek tariflerim artık çok daha fazla kişiye ulaşıyor. Fenomen'in AI asistanı muhteşem fikirler veriyor",
+    img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
   },
 ]
 
@@ -110,17 +101,15 @@ export function TestimonialsSection() {
             >
               <div className="absolute inset-x-0 -top-px mx-auto h-0.5 w-1/2 bg-gradient-to-r from-transparent via-[#e78a53] to-transparent shadow-2xl transition-all duration-500 group-hover:w-3/4"></div>
               <div className="absolute inset-x-0 -bottom-px mx-auto h-0.5 w-1/2 bg-gradient-to-r from-transparent via-[#e78a53] to-transparent shadow-2xl transition-all duration-500 group-hover:h-px"></div>
-              <span className="relative text-white">Kullanıcı Yorumları</span>
+              <span className="relative text-white">Kullanıcı Görüşleri</span>
             </button>
           </div>
-
           <h2 className="from-foreground/60 via-foreground to-foreground/60 dark:from-muted-foreground/55 dark:via-foreground dark:to-muted-foreground/55 mt-5 bg-gradient-to-r bg-clip-text text-center text-4xl font-semibold tracking-tighter text-transparent md:text-[54px] md:leading-[60px] __className_bb4e88 relative z-10">
-            Fenomen hakkında neler söylüyorlar?
+            Kullanıcılarımız Ne Diyor
           </h2>
 
           <p className="mt-5 relative z-10 text-center text-lg text-zinc-500">
-            Yapay zekâ destekli denetim, hook & senaryo üretici, içerik takvimi ve aylık raporlarla binlerce içerik
-            üreticisi ve marka büyümesini hızlandırıyor.
+            Binlerce içerik üreticisi Fenomen ile profillerini büyütüyor ve daha fazla takipçiye ulaşıyor
           </p>
         </div>
 
@@ -152,15 +141,18 @@ export function TestimonialsSection() {
 
         <div className="-mt-8 flex justify-center">
           <a
-            href="/case-studies"
-            className="group relative inline-flex items-center gap-2 rounded-full border border-[#e78a53]/30 bg-black/50 px-6 py-3 text-sm font-medium text-white transition-all hover:border-[#e78a53]/60 hover:bg-[#e78a53]/10 active:scale-95"
+            href="https://twitter.com/intent/tweet?text=Fenomen ile içerik üretimimi büyütüyorum!"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            <div className="absolute inset-x-0 -top-px mx-auto h-px w-3/4 bg-gradient-to-r from-transparent via-[#e78a53]/40 to-transparent"></div>
-            <div className="absolute inset-x-0 -bottom-px mx-auto h-px w-3/4 bg-gradient-to-r from-transparent via-[#e78a53]/40 to-transparent"></div>
-            <svg className="h-4 w-4 text-[#e78a53]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"></path>
-            </svg>
-            Başarı hikâyelerini incele
+            <button className="group relative inline-flex items-center gap-2 rounded-full border border-[#e78a53]/30 bg-black/50 px-6 py-3 text-sm font-medium text-white transition-all hover:border-[#e78a53]/60 hover:bg-[#e78a53]/10 active:scale-95">
+              <div className="absolute inset-x-0 -top-px mx-auto h-px w-3/4 bg-gradient-to-r from-transparent via-[#e78a53]/40 to-transparent"></div>
+              <div className="absolute inset-x-0 -bottom-px mx-auto h-px w-3/4 bg-gradient-to-r from-transparent via-[#e78a53]/40 to-transparent"></div>
+              <svg className="h-4 w-4 text-[#e78a53]" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"></path>
+              </svg>
+              Deneyimini Paylaş
+            </button>
           </a>
         </div>
       </div>

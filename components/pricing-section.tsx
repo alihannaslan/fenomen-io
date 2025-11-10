@@ -4,63 +4,33 @@ import { motion } from "framer-motion"
 import { Check, Sparkles } from "lucide-react"
 import { useState } from "react"
 
-type Plan = {
-  name: string
-  price?: string
-  monthlyPrice?: number
-  annualPrice?: number
-  description: string
-  features: string[]
-  popular: boolean
-  cta: string
-}
-
-const pricingPlans: Plan[] = [
+const pricingPlans = [
   {
-    name: "Ücretsiz Tarama",
+    name: "Ücretsiz",
     price: "₺0",
-    description: "TikTok/Instagram için temel AI profil denetimi",
-    features: [
-      "Aylık 1 profil",
-      "AI profil skoru (özet)",
-      "3 adet AI hook önerisi",
-      "PDF e-posta raporu",
-    ],
+    description: "AI profil skoru ve temel öneriler",
+    features: ["AI profil skoru", "Temel analiz raporu", "Aylık güncelleme", "E-posta desteği"],
     popular: false,
     cta: "Ücretsiz Başla",
+    ctaLink: "/signup",
   },
   {
-    name: "Pro Yaratıcı",
-    monthlyPrice: 29,
-    annualPrice: 24,
-    description: "Hesabını AI ile büyütmek isteyen içerik üreticileri için",
+    name: "Pro",
+    monthlyPrice: 299,
+    annualPrice: 2390,
+    description: "Tam AI rapor ve içerik önerileri",
     features: [
-      "Aylık 3 profil",
-      "Detaylı AI denetim (50+ sinyal)",
-      "Hook & senaryo üretici (sınırsız)",
-      "Haftalık içerik takvimi",
-      "AI Trend Radar (nişe özel)",
-      "Rakip kıyas & benchmark",
-      "Aylık AI ilerleme raporu",
+      "Tam AI profil analizi",
+      "Otomatik aylık raporlar",
+      "İçerik önerileri",
+      "Trend analizi",
+      "Haftalık güncelleme",
+      "Öncelikli destek",
+      "Instagram & TikTok entegrasyonu",
     ],
     popular: true,
-    cta: "14 Gün Ücretsiz Dene",
-  },
-  {
-    name: "Ekip / Ajans",
-    monthlyPrice: 99,
-    annualPrice: 79,
-    description: "Markalar ve ajanslar için sınırsız ölçekte AI raporlama",
-    features: [
-      "Sınırsız profil",
-      "Beyaz etiket PDF raporları",
-      "Marka-güven & uygunluk skoru",
-      "Takım üyeleri & yetkiler",
-      "CSV/API dışa aktarma",
-      "Öncelikli destek",
-    ],
-    popular: false,
-    cta: "Satışla Görüş",
+    cta: "Pro'ya Geç",
+    ctaLink: "/signup?plan=pro",
   },
 ]
 
@@ -70,7 +40,6 @@ export function PricingSection() {
   return (
     <section className="relative py-24 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -86,18 +55,17 @@ export function PricingSection() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm mb-6"
           >
             <Sparkles className="w-4 h-4 text-[#e78a53]" />
-            <span className="text-sm font-medium text-white/80">Paketler</span>
+            <span className="text-sm font-medium text-white/80">Fiyatlandırma</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent mb-4">
-            Hesabını yapay zekâ ile büyüt — paketini seç
+            Planını Seç
           </h2>
 
           <p className="text-lg text-white/60 max-w-2xl mx-auto mb-8">
-            Ücretsiz başlayın, ihtiyacınız arttıkça yükseltin. Aylık veya yıllık ödeme seçenekleri.
+            Ücretsiz planla başla, ihtiyacına göre yükselt. İstediğin zaman iptal edebilirsin.
           </p>
 
-          {/* Aylık/Yıllık Toggle */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -121,14 +89,14 @@ export function PricingSection() {
             >
               Yıllık
               <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
-                %20 tasarruf
+                %20 İndirim
               </span>
             </button>
           </motion.div>
         </motion.div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {pricingPlans.map((plan, index) => (
             <motion.div
               key={plan.name}
@@ -159,7 +127,7 @@ export function PricingSection() {
                   ) : (
                     <>
                       <span className="text-4xl font-bold text-white">
-                        ${isAnnual ? plan.annualPrice : plan.monthlyPrice}
+                        ₺{isAnnual ? plan.annualPrice : plan.monthlyPrice}
                       </span>
                       <span className="text-white/60 text-lg">{isAnnual ? "/yıl" : "/ay"}</span>
                     </>
@@ -177,17 +145,18 @@ export function PricingSection() {
                 ))}
               </ul>
 
-              <motion.button
+              <motion.a
+                href={plan.ctaLink}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+                className={`block w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 text-center ${
                   plan.popular
                     ? "bg-gradient-to-r from-[#e78a53] to-[#e78a53]/80 text-white shadow-lg shadow-[#e78a53]/25 hover:shadow-[#e78a53]/40"
                     : "bg-white/10 text-white border border-white/20 hover:bg-white/20"
                 }`}
               >
                 {plan.cta}
-              </motion.button>
+              </motion.a>
             </motion.div>
           ))}
         </div>
@@ -200,15 +169,14 @@ export function PricingSection() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="text-center mt-16"
         >
-          <p className="text-white/60 mb-4">Büyük ekipler veya özel ihtiyaçlar için konuşalım.</p>
-          <motion.a
-            href="/contact"
+          <p className="text-white/60 mb-4">Need a custom solution? We're here to help.</p>
+          <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="text-[#e78a53] hover:text-[#e78a53]/80 font-medium transition-colors inline-block"
+            className="text-[#e78a53] hover:text-[#e78a53]/80 font-medium transition-colors"
           >
-            Satış ekibiyle iletişime geç →
-          </motion.a>
+            Contact our sales team →
+          </motion.button>
         </motion.div>
       </div>
     </section>

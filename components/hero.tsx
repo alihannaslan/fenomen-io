@@ -1,13 +1,13 @@
-// components/hero.tsx
 "use client"
 
-import PixelCard from "../ui/pixelcards" // default export
+import { PixelCard } from "../ui/pixelcards"
 import { geist } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
-import { CloudLightning, MoveRight, Sparkles } from "lucide-react"
+import { CloudLightning, MoveRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import HomeBadge from "../ui/home-badge"
 import { Beam } from "../ui/gridbeam"
+import { Sparkles } from "lucide-react"
 import { useEffect, useState } from "react"
 import { CardHoverEffect } from "../ui/pulse-card"
 import { motion } from "framer-motion"
@@ -20,14 +20,18 @@ export default function Hero() {
   const [isScriptLoaded, setIsScriptLoaded] = useState(false)
 
   useEffect(() => {
-    // Görünür olunca script yükle
+    // Use Intersection Observer to load the script only when the component is in view
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
           import("@/lib/load-script").then(({ loadScript }) => {
             loadScript(PIXEL_SCRIPT_URL)
-              .then(() => setIsScriptLoaded(true))
-              .catch((error) => console.error("Error loading pixel script:", error))
+              .then(() => {
+                setIsScriptLoaded(true)
+              })
+              .catch((error) => {
+                console.error("Error loading pixel script:", error)
+              })
           })
           observer.disconnect()
         }
@@ -35,9 +39,14 @@ export default function Hero() {
       { threshold: 0.1 },
     )
 
-    const el = document.getElementById("hero-section")
-    if (el) observer.observe(el)
-    return () => observer.disconnect()
+    const heroElement = document.getElementById("hero-section")
+    if (heroElement) {
+      observer.observe(heroElement)
+    }
+
+    return () => {
+      observer.disconnect()
+    }
   }, [])
 
   const cards = [
@@ -50,7 +59,7 @@ export default function Hero() {
     },
     {
       title: "Animated Out of Box",
-      description: "No setup and smooth UI interactions.",
+      description: "No setup and  smooth UI interactions.",
       icon: <Sparkles className="h-full w-full" />,
       variant: "rose",
       showGridLines: true,
@@ -78,14 +87,13 @@ export default function Hero() {
 
   return (
     <div id="hero-section" className="bg-background relative min-h-screen w-full overflow-x-hidden py-32 md:px-6">
-      {/* Dekoratif görseller */}
       <img
         src="/vector1.webp"
         alt="Vector"
         width={300}
         draggable={false}
         height={300}
-        className="absolute top-0 right-0 z-[2] select-none object-cover object-center"
+        className="absolute top-0 right-0 z-[2] object-cover object-center select-none"
       />
       <img
         src="/vector2.png"
@@ -93,7 +101,7 @@ export default function Hero() {
         width={300}
         height={300}
         draggable={false}
-        className="absolute top-0 left-0 z-[2] select-none object-cover object-center"
+        className="absolute top-0 left-0 z-[2] object-cover object-center select-none"
       />
       <img
         src="/vector5.webp"
@@ -101,7 +109,7 @@ export default function Hero() {
         width={300}
         draggable={false}
         height={300}
-        className="absolute bottom-0 -left-44 z-[2] -rotate-90 select-none object-cover object-center"
+        className="absolute bottom-0 -left-44 z-[2] -rotate-90 object-cover object-center select-none"
       />
       <img
         src="/vector6.png"
@@ -109,9 +117,8 @@ export default function Hero() {
         width={300}
         draggable={false}
         height={300}
-        className="absolute -right-44 bottom-0 z-[2] rotate-90 select-none object-cover object-center"
+        className="absolute -right-44 bottom-0 z-[2] rotate-90 object-cover object-center select-none"
       />
-
       <div className="container mx-auto px-4 2xl:max-w-[1400px]">
         <motion.div
           className="flex justify-center"
@@ -121,7 +128,6 @@ export default function Hero() {
         >
           <HomeBadge />
         </motion.div>
-
         <div className="mx-auto mt-5 max-w-3xl text-center">
           <Beam />
           <motion.h1
@@ -143,7 +149,6 @@ export default function Hero() {
             blocks to ship beautiful MVPs fast.
           </motion.h1>
         </div>
-
         <motion.div
           className="mx-auto mt-5 max-w-3xl text-center"
           initial={{ opacity: 0, y: 50 }}
@@ -155,7 +160,6 @@ export default function Hero() {
             launch sooner.
           </p>
         </motion.div>
-
         <motion.div
           className="mt-8 flex justify-center gap-3"
           initial={{ opacity: 0, y: 50 }}
@@ -168,12 +172,11 @@ export default function Hero() {
             </Button>
           </Link>
           <Link prefetch={false} href="/about">
-            <Button variant="secondary">
+            <Button variant={"secondary"}>
               About <MoveRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
         </motion.div>
-
         <motion.div
           className="mt-5 flex items-center justify-center gap-x-1"
           initial={{ opacity: 0 }}
@@ -187,23 +190,49 @@ export default function Hero() {
             transition={{ duration: 1, delay: 1.25 }}
             src="/vector4.webp"
             alt="Next.js"
-            className="mt-4 mr-2 hidden w-96 select-none brightness-[4] xl:block"
+            className="mt-4 mr-2 hidden w-96 brightness-[4] select-none xl:block"
           />
           <span className="text-sm text-gray-500">We use industry standards like </span>
-          <img src="/nextjs.webp" draggable={false} alt="Next.js" width={28} height={28} className="h-7 w-7 select-none" />
-          <img src="/tailwind.webp" alt="Tailwind CSS" width={28} height={28} className="h-7 w-7 select-none" draggable={false} />
-          <img src="/framer.webp" alt="Framer Motion" width={24} height={24} className="h-6 w-6 select-none" draggable={false} />
+          <img
+            src="/nextjs.webp"
+            draggable={false}
+            alt="Next.js"
+            width={28}
+            height={28}
+            className="h-7 w-7 select-none"
+          />
+          <img
+            src="/tailwind.webp"
+            alt="Tailwind CSS"
+            width={28}
+            height={28}
+            className="h-7 w-7 select-none"
+            draggable={false}
+          />
+          <img
+            src="/framer.webp"
+            alt="Framer Motion"
+            width={24}
+            height={24}
+            className="h-6 w-6 select-none"
+            draggable={false}
+          />
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1, delay: 1.25 }}
             className="mt-4 ml-2 hidden w-96 select-none xl:block"
           >
-            <img src="/vector3.webp" alt="Vector graphic" width={384} height={100} draggable={false} className="brightness-[4]" />
+            <img
+              src="/vector3.webp"
+              alt="Vector graphic"
+              width={384}
+              height={100}
+              draggable={false}
+              className="brightness-[4]"
+            />
           </motion.div>
         </motion.div>
-
-        {/* PixelCard'lar + Cards */}
         <div className="mx-auto mt-5 max-w-2xl text-center">
           <main className="bg-background dark:bg-background m-auto flex w-full flex-col items-center justify-center gap-8 p-6 text-left text-gray-800 sm:flex-row xl:p-4 dark:text-[#e3e3e3]">
             {isScriptLoaded && (
@@ -220,11 +249,10 @@ export default function Hero() {
                   number={cardConfigurations[0].number}
                   icon={cardConfigurations[0].icon}
                   desc={cardConfigurations[0].desc}
-                  color={cardConfigurations[0].color} {/* DÜZELTİLDİ */}
+                  color={cardConfigurations[1].color}
                 />
               </motion.div>
             )}
-
             {isScriptLoaded && (
               <motion.div
                 className="bg-background absolute top-[45%] right-28 z-50 hidden h-[370px] w-[300px] xl:block"
@@ -233,17 +261,16 @@ export default function Hero() {
                 transition={{ duration: 0.75, delay: 0.5 }}
               >
                 <PixelCard
+                  color={cardConfigurations[1].color}
+                  icon={cardConfigurations[1].icon}
                   key={cardConfigurations[1].label}
                   label={cardConfigurations[1].label}
                   canvasProps={cardConfigurations[1].canvasProps}
                   number={cardConfigurations[1].number}
-                  icon={cardConfigurations[1].icon}
                   desc={cardConfigurations[1].desc}
-                  color={cardConfigurations[1].color}
                 />
               </motion.div>
             )}
-
             {cards.map((card, i) => (
               <motion.div
                 key={i}
@@ -256,8 +283,8 @@ export default function Hero() {
                   description={card.description}
                   icon={card.icon}
                   variant={card.variant}
-                  glowEffect
-                  size="lg"
+                  glowEffect={true}
+                  size={"lg"}
                   showGridLines={card.showGridLines}
                 />
               </motion.div>

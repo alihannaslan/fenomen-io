@@ -5,8 +5,8 @@ import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
+  title: "Fenomen - Yapay Zeka Destekli İçerik Üretim Platformu",
+  description: "Fenomen ile sosyal medya içeriklerinizi kolayca oluşturun ve yönetin",
   generator: "v0.app",
 }
 
@@ -16,17 +16,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
-      <head>
-        <style>{`
-html {
-  font-family: ${GeistSans.style.fontFamily};
-  --font-sans: ${GeistSans.variable};
-  --font-mono: ${GeistMono.variable};
-}
-        `}</style>
-      </head>
-      <body className="dark">{children}</body>
+    <html lang="tr" className={`dark ${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className="dark font-sans">{children}</body>
     </html>
   )
 }

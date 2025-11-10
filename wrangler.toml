@@ -1,4 +1,11 @@
-name = "fenomen-io"
-pages_build_output_dir = ".vercel/output/static"
-compatibility_date = "2025-11-08"
-compatibility_flags = ["nodejs_compat"]
+name = "fenomen-app"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "USERS_KV"
+id = "your-kv-namespace-id-here"
+
+[vars]
+ENVIRONMENT = "development"
+JWT_SECRET = "your-jwt-secret-key-here-change-in-production"

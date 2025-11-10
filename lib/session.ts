@@ -4,12 +4,13 @@ import { SignJWT, jwtVerify } from "jose"
 const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-in-production")
 
 export interface SessionData {
-  userId: number
+  userId: string
   email: string
+  name: string
 }
 
-export async function createSession(userId: number, email: string): Promise<string> {
-  const token = await new SignJWT({ userId, email })
+export async function createSession(userId: string, email: string, name: string): Promise<string> {
+  const token = await new SignJWT({ userId, email, name })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("7d")
     .sign(SECRET_KEY)
