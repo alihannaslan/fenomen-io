@@ -1,7 +1,16 @@
-name = "fenomen-io-users"
-compatibility_date = "2024-01-01"
+# wrangler.toml
+# Bu "name" Pages projesinin adıyla eşleşebilir; zorunlu değil ama düzenli olur
+name = "fenomen-io"
+
+# next-on-pages çıktısını Pages'e statik olarak veriyoruz
 pages_build_output_dir = ".vercel/output/static"
 
+# Worker uyumluluğu: Node API’leri için gerekli
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# KV bağlamayı dashboard'tan yaptığın için bu blok zorunlu değil,
+# ama bırakmanda sakınca yok. İsim "USERS_KV" kodda kullandığın isimle aynı olmalı.
 [[kv_namespaces]]
 binding = "USERS_KV"
 id = "c831039855564c16818cfcd988140723"
