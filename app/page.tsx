@@ -8,6 +8,8 @@ import { FAQSection } from "@/components/faq-section"
 import { PricingSection } from "@/components/pricing-section"
 import { StickyFooter } from "@/components/sticky-footer"
 import { Sparkles } from "lucide-react"
+import Image from "next/image"
+
 
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -57,9 +59,8 @@ export default function Home() {
 
       {/* Desktop Header */}
       <header
-        className={`sticky top-4 z-[9999] mx-auto hidden w-full flex-row items-center justify-between self-start rounded-full bg-background/80 md:flex backdrop-blur-sm border border-border/50 shadow-lg transition-all duration-300 ${
-          isScrolled ? "max-w-3xl px-2" : "max-w-5xl px-4"
-        } py-2`}
+        className={`sticky top-4 z-[9999] mx-auto hidden w-full flex-row items-center justify-between self-start rounded-full bg-background/80 md:flex backdrop-blur-sm border border-border/50 shadow-lg transition-all duration-300 ${isScrolled ? "max-w-3xl px-2" : "max-w-5xl px-4"
+          } py-2`}
         style={{
           willChange: "transform",
           transform: "translateZ(0)",
@@ -68,15 +69,20 @@ export default function Home() {
         }}
       >
         <a
-          className={`z-50 flex items-center justify-center gap-2 transition-all duration-300 ${
-            isScrolled ? "ml-4" : ""
-          }`}
+          className={`z-50 flex items-center justify-center gap-2 transition-all duration-300 ${isScrolled ? "ml-4" : ""
+            }`}
           href="/"
         >
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold text-foreground">Fenomen</span>
-          </div>
+        <div className="flex items-center gap-2">
+          <Image
+            src="/logo.png"
+            alt="Fenomen Logo"
+            width={40}
+            height={40}
+            className="h-8 w-28 object-contain"
+            priority
+          />
+        </div>
         </a>
 
         <div className="absolute inset-0 hidden flex-1 flex-row items-center justify-center space-x-2 text-sm font-medium text-muted-foreground transition duration-200 hover:text-foreground md:flex md:space-x-2">
@@ -177,10 +183,16 @@ export default function Home() {
 
       {/* Mobile Header */}
       <header className="sticky top-4 z-[9999] mx-4 flex w-auto flex-row items-center justify-between rounded-full bg-background/80 backdrop-blur-sm border border-border/50 shadow-lg md:hidden px-4 py-3">
-        <a className="flex items-center justify-center gap-2" href="/">
-          <Sparkles className="h-7 w-7 text-primary" />
-          <span className="text-lg font-bold text-foreground">Fenomen</span>
-        </a>
+        <div className="flex items-center gap-2">
+          <Image
+            src="/logo.png"
+            alt="Fenomen Logo"
+            width={40}
+            height={40}
+            className="h-8 w-28 object-contain"
+            priority
+          />
+        </div>
 
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
