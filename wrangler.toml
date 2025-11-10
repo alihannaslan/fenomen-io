@@ -1,11 +1,13 @@
-name = "fenomen-app"
+name = "fenomen-io"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
+pages_build_output_dir = ".vercel/output/static"
 
 [[kv_namespaces]]
 binding = "USERS_KV"
-id = "your-kv-namespace-id-here"
+id = "c831039855564c16818cfcd988140723"
 
 [vars]
 ENVIRONMENT = "development"
-JWT_SECRET = "your-jwt-secret-key-here-change-in-production"
+JWT_SECRET = "Q2xvdWRmbGFyZVNlY3JldEtleUhlcmUxMjM0NTY3ODkwMTIzNDU2Nzg5MA=="
+
