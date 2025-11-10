@@ -14,21 +14,24 @@
     "jsx": "preserve",
     "incremental": true,
 
+    // 👇 Cloudflare Functions için gerekli
     "types": ["@cloudflare/workers-types"],
 
-    "plugins": [
-      { "name": "next" }
-    ],
+    "plugins": [{ "name": "next" }],
+
     "paths": {
       "@/*": ["./*"]
     }
   },
+
   "include": [
     "global.d.ts",
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "functions/**/*.ts",
     ".next/types/**/*.ts"
   ],
+
   "exclude": ["node_modules"]
 }
