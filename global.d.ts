@@ -1,4 +1,5 @@
 /// <reference types="@cloudflare/workers-types" />
+declare module "@cloudflare/next-on-pages";
 
 interface Env {
   USERS_KV: KVNamespace;

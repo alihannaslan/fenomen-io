@@ -1,41 +1,49 @@
+/// <reference types="@cloudflare/workers-types" />
+import { getRequestContext } from "@cloudflare/next-on-pages";
+
 export const runtime = "edge";
 
-type Env = {
+type Bindings = {
   USERS_KV: KVNamespace;
-  N8N_URL: string;   // Cloudflare Pages → Variables
-  N8N_TOKEN: string; // Cloudflare Pages → Variables
+  N8N_URL: string;
+  N8N_TOKEN: string;
 };
 
-export async function POST(req: Request, ctx: { env: Env }) {
+export async function POST(req: Request) {
   try {
-const { username } = (await req.json()) as { username?: string }
+    // Cloudflare Pages env/bindings
+    const { env } = getRequestContext();
+    const { USERS_KV, N8N_URL, N8N_TOKEN } = env as unknown as Bindings;
 
-    if (!username) {
-      return Response.json({ error: "username required" }, { status: 400 });
-    }
-
-    const clean = username.replace(/^@/, "").trim();
-    if (!clean) {
-      return Response.json({ error: "invalid username" }, { status: 400 });
-    }
+    const body = (await req.json().catch(() => ({}))) as { username?: string };
+    const clean = (body.username || "").replace(/^@/, "").trim();
+    if (!clean) return Response.json({ error: "username required" }, { status: 400 });
 
     const key = `result:${clean}`;
 
     // 1) KV'ye pending yaz
-    await ctx.env.USERS_KV.put(
+    await USERS_KV.put(
       key,
       JSON.stringify({ status: "pending", username: clean, ts: Date.now() })
     );
 
     // 2) n8n'i tetikle (fire-and-forget)
-    const url = new URL(ctx.env.N8N_URL);
-    url.searchParams.set("username", clean);
-    url.searchParams.set("token", ctx.env.N8N_TOKEN);
-    // hata yutsa da sorun yok; arkada çalışsın
-    fetch(url.toString()).catch(() => {});
+    if (N8N_URL && N8N_TOKEN) {
+      fetch(N8N_URL, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${N8N_TOKEN}`,
+        },
+        body: JSON.stringify({ username: clean }),
+      }).catch(() => {});
+    }
 
-    return Response.json({ ok: true, key }, { status: 200 });
-  } catch (e: any) {
-    return Response.json({ error: String(e?.message || e) }, { status: 500 });
+    return Response.json({ ok: true, key });
+  } catch (err: any) {
+    return Response.json(
+      { error: "exception", message: String(err?.message || err) },
+      { status: 500 }
+    );
   }
 }
