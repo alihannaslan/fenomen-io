@@ -1,0 +1,4 @@
+# .cfignore
+.next/**
+node_modules/**
+**/*.map

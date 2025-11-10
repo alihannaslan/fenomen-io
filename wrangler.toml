@@ -1,13 +1,7 @@
-name = "fenomen-app"
+name = "fenomen-io-users"
 compatibility_date = "2024-01-01"
-pages_build_output_dir = ".next"
+pages_build_output_dir = ".vercel/output/static"
 
 [[kv_namespaces]]
 binding = "USERS_KV"
-id = "BURAYA-KV-NAMESPACE-ID-YAPIŞTIRIN"  # wrangler kv:namespace create "USERS_KV" komutuyla oluşturun
-
-# Production için preview namespace (opsiyonel)
-# preview_id = "BURAYA-PREVIEW-KV-ID"
-
-[vars]
-JWT_SECRET = "super-gizli-jwt-anahtari-production-da-degistir"
+id = "c831039855564c16818cfcd988140723"
