@@ -16,7 +16,7 @@ const pricingPlans = [
   },
   {
     name: "Pro",
-    monthlyPrice: 299,
+    monthlyPrice: 599,
     annualPrice: 2390,
     description: "Tam AI rapor ve içerik önerileri",
     features: [
