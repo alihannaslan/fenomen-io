@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -11,31 +11,121 @@ interface DashboardClientProps {
   user: SessionData
 }
 
+type KVProfile = {
+  status: string
+  username: string
+  result: {
+    profile_summary?: string
+    content_patterns?: string
+    weaknesses?: string
+    roadmap?: string
+    hooks?: string
+    branding?: string
+    growth_projection?: string
+    final_summary?: string
+  }
+  meta?: unknown
+  ts?: number
+}
+
 export default function DashboardClient({ user }: DashboardClientProps) {
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [kvData, setKvData] = useState<{
+    email: string
+    user: { id: string; email: string; name?: string; username?: string }
+    profile: KVProfile
+  } | null>(null)
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
-
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      })
-
+      await fetch("/api/auth/logout", { method: "POST" })
       router.push("/")
       router.refresh()
-    } catch (error) {
-      console.error("Logout error:", error)
+    } catch (e) {
+      console.error("Logout error:", e)
       setIsLoggingOut(false)
     }
   }
 
-  const formattedDate = new Date().toLocaleDateString("tr-TR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
+  // --- KV'den profil verisini çek ---
+  useEffect(() => {
+    const run = async () => {
+      if (!user?.email) return
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch(`/api/profile?email=${encodeURIComponent(user.email)}`, { cache: "no-store" })
+
+        if (!res.ok) {
+          let message = `HTTP ${res.status}`
+
+          try {
+            const data = (await res.json()) as unknown
+            if (data && typeof data === "object" && "error" in data) {
+              // data.error string değilse de String(...) ile güvenli dönüştür
+              message = String((data as { error: unknown }).error)
+            }
+          } catch {
+            // JSON değilse sessizce geç; message HTTP durumuyla kalır
+          }
+
+          throw new Error(message)
+        }
+
+        const data = (await res.json()) as {
+          email: string
+          user: { id: string; email: string; name?: string; username?: string }
+          profile: KVProfile
+        }
+        setKvData(data)
+      } catch (err: any) {
+        setError(err?.message || "Beklenmeyen hata")
+      } finally {
+        setLoading(false)
+      }
+    }
+    run()
+  }, [user?.email])
+
+  const formattedDate = useMemo(
+    () =>
+      new Date().toLocaleDateString("tr-TR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    []
+  )
+
+  // küçük yardımcı bileşen
+  const SectionCard = ({
+    title,
+    text,
+    delay = 0,
+  }: {
+    title: string
+    text?: string
+    delay?: number
+  }) => {
+    if (!text) return null
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay }}>
+        <Card className="bg-zinc-900/50 border-zinc-800 p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">{title}</h3>
+          {/* Markdown bağımlılığı olmadan düzgün kırılım */}
+          <div className="text-zinc-200 whitespace-pre-wrap leading-relaxed text-[15px]">
+            {text}
+          </div>
+        </Card>
+      </motion.div>
+    )
+  }
+
+  const username = kvData?.user?.username || kvData?.profile?.username
 
   return (
     <div className="min-h-screen bg-black">
@@ -80,17 +170,20 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             {/* Welcome Section */}
             <div className="mb-8">
-              <h1 className="text-4xl font-bold text-white mb-2">Hoş geldin{user.name ? `, ${user.name}` : ""}!</h1>
-              <p className="text-zinc-400 text-lg">Hesabınızla ilgili güncel bilgiler burada.</p>
+              <h1 className="text-4xl font-bold text-white mb-2">
+                Hoş geldin{user.name ? `, ${user.name}` : ""}!
+                {username ? <span className="ml-2 text-zinc-400 text-2xl">(@{username})</span> : null}
+              </h1>
+              <p className="text-zinc-400 text-lg">
+                Hesabınızla ilgili güncel bilgiler burada.
+              </p>
+              {loading && <p className="text-sm text-zinc-500 mt-2">KV verisi yükleniyor…</p>}
+              {error && <p className="text-sm text-red-400 mt-2">Hata: {error}</p>}
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
                 <Card className="bg-zinc-900/50 border-zinc-800 p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -99,23 +192,15 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                     </div>
                     <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
                   </div>
                 </Card>
               </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
                 <Card className="bg-zinc-900/50 border-zinc-800 p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -124,23 +209,15 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                     </div>
                     <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </div>
                 </Card>
               </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-              >
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
                 <Card className="bg-zinc-900/50 border-zinc-800 p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -149,12 +226,8 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                     </div>
                     <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
                   </div>
@@ -163,11 +236,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
             </div>
 
             {/* User Info Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
               <Card className="bg-zinc-900/50 border-zinc-800 p-8">
                 <h2 className="text-2xl font-bold text-white mb-6">Hesap Bilgileri</h2>
 
@@ -192,18 +261,22 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                     <span className="text-white font-medium">{formattedDate}</span>
                   </div>
                 </div>
-
-                <div className="mt-8 flex gap-4">
-                  <Button className="bg-[#e78a53] hover:bg-[#e78a53]/90 text-white">Profili Düzenle</Button>
-                  <Button
-                    variant="outline"
-                    className="bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white"
-                  >
-                    Ayarlar
-                  </Button>
-                </div>
               </Card>
             </motion.div>
+
+            {/* --- KV'den gelen PROFIL blokları --- */}
+            {kvData?.profile?.result && (
+              <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <SectionCard title="Profil Özeti" text={kvData.profile.result.profile_summary} delay={0.1} />
+                <SectionCard title="İçerik Desenleri" text={kvData.profile.result.content_patterns} delay={0.15} />
+                <SectionCard title="Zayıf Noktalar & Öneriler" text={kvData.profile.result.weaknesses} delay={0.2} />
+                <SectionCard title="30 Günlük Roadmap" text={kvData.profile.result.roadmap} delay={0.25} />
+                <SectionCard title="Hook & Caption Bankası" text={kvData.profile.result.hooks} delay={0.3} />
+                <SectionCard title="Markalaşma Önerileri" text={kvData.profile.result.branding} delay={0.35} />
+                <SectionCard title="Büyüme Projeksiyonu" text={kvData.profile.result.growth_projection} delay={0.4} />
+                <SectionCard title="Genel Değerlendirme" text={kvData.profile.result.final_summary} delay={0.45} />
+              </div>
+            )}
 
             {/* Quick Actions */}
             <motion.div
@@ -216,12 +289,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center flex-shrink-0">
                     <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                   </div>
                   <div>
@@ -235,12 +303,8 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
                     <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
                   <div>
