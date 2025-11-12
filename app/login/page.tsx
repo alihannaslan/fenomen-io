@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sparkles } from "lucide-react"
+import Image from "next/image"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -73,10 +74,16 @@ export default function LoginPage() {
       >
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-6">
-            <div className="flex items-center justify-center space-x-2">
-              <Sparkles className="h-10 w-10 text-[#e78a53]" />
-              <span className="text-2xl font-bold text-white">Fenomen</span>
-            </div>
+           <div className="flex items-center gap-2">
+                     <Image
+                       src="/logo.png"
+                       alt="Fenomen Logo"
+                       width={40}
+                       height={40}
+                       className="h-12 w-38 object-contain"
+                       priority
+                     />
+                   </div>
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">Tekrar hoş geldin</h1>
           <p className="text-zinc-400">Hesabına giriş yap ve AI asistanını kullanmaya devam et</p>

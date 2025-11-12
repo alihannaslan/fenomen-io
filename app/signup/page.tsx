@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sparkles } from "lucide-react"
+import Image from "next/image"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -114,10 +115,16 @@ export default function SignupPage() {
       >
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-6">
-            <div className="flex items-center justify-center space-x-2">
-              <Sparkles className="h-10 w-10 text-[#e78a53]" />
-              <span className="text-2xl font-bold text-white">Fenomen</span>
-            </div>
+            <div className="flex items-center gap-2">
+                                <Image
+                                  src="/logo.png"
+                                  alt="Fenomen Logo"
+                                  width={40}
+                                  height={40}
+                                  className="h-12 w-38 object-contain"
+                                  priority
+                                />
+                              </div>
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">Fenomen hesabı oluştur</h1>
           <p className="text-zinc-400">AI ile profilini büyüt — aylık raporlar ve akıllı önerilerle</p>
@@ -188,7 +195,6 @@ export default function SignupPage() {
                 className="bg-zinc-800/50 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-[#e78a53] focus:ring-[#e78a53]/20"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="password" className="text-white">
                 Parola
@@ -232,7 +238,7 @@ export default function SignupPage() {
                   className="mt-1 rounded border-zinc-700 bg-zinc-800 text-[#e78a53] focus:ring-[#e78a53]/20"
                 />
                 <label htmlFor="receiveReports" className="text-sm text-zinc-300">
-                  Aylık AI performans raporlarını almak istiyorum
+                  Aylık yapay zeka performans raporlarını almak istiyorum
                 </label>
               </div>
 
