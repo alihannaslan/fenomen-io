@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -26,6 +26,271 @@ type KVProfile = {
   }
   meta?: unknown
   ts?: number
+}
+
+const renderInlineMarkdown = (text: string, keyBase: string): ReactNode[] => {
+  if (!text) return []
+
+  const nodes: ReactNode[] = []
+  const tokenRegex = /\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)/g
+  let lastIndex = 0
+  let matchIndex = 0
+
+  for (const match of text.matchAll(tokenRegex)) {
+    const start = match.index ?? 0
+
+    if (start > lastIndex) {
+      nodes.push(text.slice(lastIndex, start))
+    }
+
+    if (match[1]) {
+      nodes.push(
+        <strong key={`${keyBase}-strong-${matchIndex}`}>
+          {renderInlineMarkdown(match[1], `${keyBase}-strong-${matchIndex}`)}
+        </strong>
+      )
+    } else if (match[2]) {
+      nodes.push(
+        <em key={`${keyBase}-em-${matchIndex}`}>
+          {renderInlineMarkdown(match[2], `${keyBase}-em-${matchIndex}`)}
+        </em>
+      )
+    } else if (match[3]) {
+      nodes.push(
+        <code key={`${keyBase}-code-${matchIndex}`} className="rounded bg-zinc-800 px-1 py-0.5 text-xs">
+          {match[3]}
+        </code>
+      )
+    } else if (match[4] && match[5]) {
+      nodes.push(
+        <a
+          key={`${keyBase}-link-${matchIndex}`}
+          href={match[5]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#e78a53] underline-offset-2 hover:underline"
+        >
+          {renderInlineMarkdown(match[4], `${keyBase}-link-label-${matchIndex}`)}
+        </a>
+      )
+    }
+
+    lastIndex = start + match[0].length
+    matchIndex += 1
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex))
+  }
+
+  return nodes
+}
+
+const convertMarkdownToReact = (markdown: string): ReactNode[] => {
+  const normalized = markdown.replace(/\r\n/g, "\n")
+  const lines = normalized.split("\n")
+  const blocks: ReactNode[] = []
+
+  let blockIndex = 0
+  let listBuffer: { ordered: boolean; items: string[] } | null = null
+  let quoteBuffer: string[] | null = null
+  let inCodeBlock = false
+  let codeBuffer: string[] = []
+
+  const flushList = () => {
+    if (!listBuffer) return
+
+    const listKey = `md-list-${blockIndex}`
+    const ListTag = listBuffer.ordered ? "ol" : "ul"
+    const listClass = listBuffer.ordered ? "list-decimal" : "list-disc"
+
+    blocks.push(
+      <ListTag key={listKey} className={`${listClass} space-y-2 pl-5 text-zinc-200`}>
+        {listBuffer.items.map((item, idx) => (
+          <li key={`${listKey}-item-${idx}`} className="leading-relaxed">
+            {renderInlineMarkdown(item.trim(), `${listKey}-item-${idx}`)}
+          </li>
+        ))}
+      </ListTag>
+    )
+
+    blockIndex += 1
+    listBuffer = null
+  }
+
+  const flushQuote = () => {
+    if (!quoteBuffer || quoteBuffer.length === 0) return
+
+    const quoteKey = `md-quote-${blockIndex}`
+    const paragraphs = quoteBuffer
+      .join("\n")
+      .split(/\n{2,}/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean)
+
+    blocks.push(
+      <blockquote key={quoteKey} className="space-y-2 border-l-2 border-zinc-700 pl-4 text-zinc-300">
+        {paragraphs.length > 0
+          ? paragraphs.map((paragraph, idx) => (
+            <p key={`${quoteKey}-p-${idx}`} className="leading-relaxed italic">
+              {renderInlineMarkdown(paragraph, `${quoteKey}-p-${idx}`)}
+            </p>
+          ))
+          : (
+            <p className="leading-relaxed italic">
+              {renderInlineMarkdown(quoteBuffer.join(" "), `${quoteKey}-p-0`)}
+            </p>
+            )}
+      </blockquote>
+    )
+
+    blockIndex += 1
+    quoteBuffer = null
+  }
+
+  const flushCode = () => {
+    if (codeBuffer.length === 0) return
+
+    const codeKey = `md-code-${blockIndex}`
+
+    blocks.push(
+      <pre
+        key={codeKey}
+        className="overflow-x-auto rounded-md border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-100"
+      >
+        <code className="whitespace-pre">
+          {codeBuffer.join("\n").replace(/\s+$/u, "")}
+        </code>
+      </pre>
+    )
+
+    blockIndex += 1
+    codeBuffer = []
+  }
+
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+
+    if (inCodeBlock) {
+      if (trimmedLine.startsWith("```") || trimmedLine.startsWith("~~~")) {
+        flushCode()
+        inCodeBlock = false
+        continue
+      }
+
+      codeBuffer.push(line)
+      continue
+    }
+
+    if (trimmedLine.startsWith("```") || trimmedLine.startsWith("~~~")) {
+      flushList()
+      flushQuote()
+      inCodeBlock = true
+      codeBuffer = []
+      continue
+    }
+
+    if (!trimmedLine) {
+      flushList()
+      flushQuote()
+      continue
+    }
+
+    if (trimmedLine.startsWith(">")) {
+      flushList()
+      if (!quoteBuffer) {
+        quoteBuffer = []
+      }
+      quoteBuffer.push(trimmedLine.replace(/^>\s?/, ""))
+      continue
+    }
+
+    flushQuote()
+
+    const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/)
+    if (headingMatch) {
+      flushList()
+      const level = Math.min(headingMatch[1].length, 3)
+      const content = headingMatch[2].trim()
+      const sizeClass = level === 1 ? "text-xl" : level === 2 ? "text-lg" : "text-base"
+
+      blocks.push(
+        <h4
+          key={`md-heading-${blockIndex}`}
+          className={`font-semibold text-white ${sizeClass !== "text-base" ? sizeClass : ""} leading-tight`}
+        >
+          {renderInlineMarkdown(content, `heading-${blockIndex}`)}
+        </h4>
+      )
+
+      blockIndex += 1
+      continue
+    }
+
+    if (/^[-*+]\s+/.test(trimmedLine)) {
+      const item = trimmedLine.replace(/^[-*+]\s+/, "")
+      if (!listBuffer || listBuffer.ordered) {
+        flushList()
+        listBuffer = { ordered: false, items: [] }
+      }
+      listBuffer.items.push(item)
+      continue
+    }
+
+    if (/^\d+\.\s+/.test(trimmedLine)) {
+      const item = trimmedLine.replace(/^\d+\.\s+/, "")
+      if (!listBuffer || !listBuffer.ordered) {
+        flushList()
+        listBuffer = { ordered: true, items: [] }
+      }
+      listBuffer.items.push(item)
+      continue
+    }
+
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmedLine)) {
+      flushList()
+      blocks.push(<hr key={`md-hr-${blockIndex}`} className="border-zinc-800" />)
+      blockIndex += 1
+      continue
+    }
+
+    flushList()
+
+    blocks.push(
+      <p key={`md-p-${blockIndex}`} className="leading-relaxed">
+        {renderInlineMarkdown(trimmedLine, `paragraph-${blockIndex}`)}
+      </p>
+    )
+
+    blockIndex += 1
+  }
+
+  if (inCodeBlock) {
+    flushCode()
+  }
+
+  flushList()
+  flushQuote()
+
+  if (blocks.length === 0) {
+    return [
+      <p key="md-fallback" className="leading-relaxed">
+        {markdown}
+      </p>,
+    ]
+  }
+
+  return blocks
+}
+
+const MarkdownRenderer = ({ text }: { text: string }) => {
+  const content = useMemo(() => convertMarkdownToReact(text), [text])
+
+  return (
+    <div className="space-y-3 text-[15px] leading-relaxed text-zinc-200">
+      {content}
+    </div>
+  )
 }
 
 export default function DashboardClient({ user }: DashboardClientProps) {
@@ -116,10 +381,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay }}>
         <Card className="bg-zinc-900/50 border-zinc-800 p-6">
           <h3 className="text-xl font-semibold text-white mb-4">{title}</h3>
-          {/* Markdown bağımlılığı olmadan düzgün kırılım */}
-          <div className="text-zinc-200 whitespace-pre-wrap leading-relaxed text-[15px]">
-            {text}
-          </div>
+          <MarkdownRenderer text={text} />
         </Card>
       </motion.div>
     )
