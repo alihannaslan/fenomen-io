@@ -1,22 +1,34 @@
 // app/api/profile/route.ts
 export const runtime = "edge"
 import { getRequestContext } from "@cloudflare/next-on-pages"
+import type { KVNamespace } from "@cloudflare/workers-types"
+
+const useLocalKv = process.env.USE_LOCAL_KV === "true"
 
 type Bindings = { USERS_KV: KVNamespace }
 
 export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url)
+    const email = searchParams.get("email")
+    if (!email) {
+      return new Response(JSON.stringify({ error: "email query param required" }), { status: 400 })
+    }
+
+    if (useLocalKv) {
+      const mod = await import("@/lib/mock-kv")
+      const data = await mod.mockGetProfileForEmail(email)
+      if (!data) {
+        return new Response(JSON.stringify({ error: "Local mock verisi bulunamadı" }), { status: 404 })
+      }
+      return Response.json(data)
+    }
+
     const { env } = getRequestContext()
     const { USERS_KV } = env as unknown as Bindings
 
     if (!USERS_KV) {
       return new Response(JSON.stringify({ error: "KV binding not found: USERS_KV" }), { status: 500 })
-    }
-
-    const { searchParams } = new URL(req.url)
-    const email = searchParams.get("email")
-    if (!email) {
-      return new Response(JSON.stringify({ error: "email query param required" }), { status: 400 })
     }
 
     // 1) email:{email} -> "user_XXXXXXXX"

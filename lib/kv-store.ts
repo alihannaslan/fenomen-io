@@ -4,6 +4,18 @@
 import type { KVNamespace } from "@cloudflare/workers-types"
 import bcrypt from "bcryptjs"
 
+const useLocalMock = process.env.USE_LOCAL_KV === "true"
+
+type MockModule = typeof import("./mock-kv")
+let mockModulePromise: Promise<MockModule> | null = null
+
+async function loadMockModule(): Promise<MockModule> {
+  if (!mockModulePromise) {
+    mockModulePromise = import("./mock-kv")
+  }
+  return mockModulePromise
+}
+
 export interface User {
   id: string
   email: string
@@ -28,13 +40,23 @@ export interface Env {
 
 // Create a new user in KV
 export async function createUser(
-  kv: KVNamespace,
+  kv: KVNamespace | undefined,
   email: string,
   name: string,
   password: string,
   username?: string,
 ): Promise<UserPublic | null> {
   try {
+    if (useLocalMock) {
+      const mod = await loadMockModule()
+      return mod.mockCreateUser(email, name, password, username)
+    }
+
+    if (!kv) {
+      console.error("Error creating user: KV namespace unavailable")
+      return null
+    }
+
     // Check if user already exists
     const existingUser = await findUserByEmail(kv, email)
     if (existingUser) {
@@ -73,8 +95,18 @@ export async function createUser(
 }
 
 // Find user by email
-export async function findUserByEmail(kv: KVNamespace, email: string): Promise<User | null> {
+export async function findUserByEmail(kv: KVNamespace | undefined, email: string): Promise<User | null> {
   try {
+    if (useLocalMock) {
+      const mod = await loadMockModule()
+      return mod.mockFindUserByEmail(email)
+    }
+
+    if (!kv) {
+      console.error("Error finding user by email: KV namespace unavailable")
+      return null
+    }
+
     // Get user ID from email index
     const userId = await kv.get(`email:${email}`)
     if (!userId) {
@@ -95,8 +127,18 @@ export async function findUserByEmail(kv: KVNamespace, email: string): Promise<U
 }
 
 // Find user by ID
-export async function findUserById(kv: KVNamespace, id: string): Promise<UserPublic | null> {
+export async function findUserById(kv: KVNamespace | undefined, id: string): Promise<UserPublic | null> {
   try {
+    if (useLocalMock) {
+      const mod = await loadMockModule()
+      return mod.mockFindUserById(id)
+    }
+
+    if (!kv) {
+      console.error("Error finding user by ID: KV namespace unavailable")
+      return null
+    }
+
     const userData = await kv.get(`user:${id}`)
     if (!userData) {
       return null
@@ -112,8 +154,22 @@ export async function findUserById(kv: KVNamespace, id: string): Promise<UserPub
 }
 
 // Verify user password
-export async function verifyUserPassword(kv: KVNamespace, email: string, password: string): Promise<UserPublic | null> {
+export async function verifyUserPassword(
+  kv: KVNamespace | undefined,
+  email: string,
+  password: string,
+): Promise<UserPublic | null> {
   try {
+    if (useLocalMock) {
+      const mod = await loadMockModule()
+      return mod.mockVerifyUserPassword(email, password)
+    }
+
+    if (!kv) {
+      console.error("Error verifying user: KV namespace unavailable")
+      return null
+    }
+
     const user = await findUserByEmail(kv, email)
     if (!user) {
       return null
