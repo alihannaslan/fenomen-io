@@ -1,47 +1,72 @@
+// app/api/auth/signup/route.ts
 import { NextResponse } from "next/server"
 import { createSession, setSessionCookie } from "@/lib/session"
-import { createUser } from "@/lib/kv-store"
-import { getRequestContext } from "@cloudflare/next-on-pages"
-import type { KVNamespace } from "@cloudflare/workers-types"
-
-const useLocalKv = process.env.USE_LOCAL_KV === "true"
 
 export const runtime = "edge"
 
+// n8n tarafındaki webhook URL'n
+// .env.local ve Cloudflare Pages Env içine ekle:
+// N8N_SIGNUP_WEBHOOK_URL=https://n8n.xxx/webhook/....
+const N8N_SIGNUP_WEBHOOK_URL = process.env.N8N_SIGNUP_WEBHOOK_URL
+
 export async function POST(request: Request) {
   try {
-    const { email, password, name, username } = await request.json()
+const body = (await request.json()) as {
+  email?: string
+  password?: string
+  name?: string
+  username?: string
+}
 
-    // Validate input
+const { email, password, name, username } = body
+
+    // Basit validation
     if (!email || !password || !name) {
-      return NextResponse.json({ error: "E-posta, şifre ve ad gereklidir" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Email, şifre ve isim zorunludur." },
+        { status: 400 },
+      )
     }
 
-    let kv: KVNamespace | undefined
-    if (!useLocalKv) {
+    // Kullanıcı objesini basitçe oluştur (şimdilik KV'ye kaydetmeden)
+    const user = {
+      id: crypto.randomUUID(),
+      email,
+      name,
+      username: username || email.split("@")[0],
+    }
+
+    // ✅ n8n webhook'una haber ver
+    if (N8N_SIGNUP_WEBHOOK_URL) {
       try {
-        const { env } = getRequestContext()
-        kv = (env as Record<string, unknown>)?.USERS_KV as KVNamespace | undefined
-      } catch (error) {
-        console.error("KV binding erişilemedi:", error)
+        await fetch(N8N_SIGNUP_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            event: "signup",
+            email: user.email,
+            name: user.name,
+            username: user.username,
+            source: "fenomen.io",
+          }),
+        })
+      } catch (err) {
+        console.error("n8n webhook error:", err)
+        // webhook patlasa bile signup'ı bozmuyoruz
       }
+    } else {
+      console.warn("N8N_SIGNUP_WEBHOOK_URL tanımlı değil")
     }
 
-    if (!kv && !useLocalKv) {
-      return NextResponse.json({ error: "Depolama bağlantısı kurulamadı" }, { status: 500 })
-    }
-
-    const user = await createUser(kv, email, name, password, username)
-
-    if (!user) {
-      return NextResponse.json({ error: "Bu e-posta adresi zaten kullanılıyor" }, { status: 400 })
-    }
-
+    // Session oluştur
     const token = await createSession(user.id, user.email, user.name)
     await setSessionCookie(token)
 
     return NextResponse.json(
-      { success: true, user: { id: user.id, email: user.email, name: user.name, username: user.username } },
+      {
+        success: true,
+        user,
+      },
       { status: 201 },
     )
   } catch (error) {
