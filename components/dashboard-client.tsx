@@ -1,19 +1,49 @@
 "use client"
 
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import type { SessionData } from "@/lib/session"
+import Image from "next/image"
 
 interface DashboardClientProps {
   user: SessionData
 }
 
+type BrightDataTopVideo = {
+  video_id: string
+  playcount?: number
+  diggcount?: number
+  commentcount?: number
+  share_count?: number
+  video_url?: string
+  cover_image?: string
+}
+
+type BrightDataProfile = {
+  account_id?: string
+  nickname?: string
+  biography?: string
+  bio_link?: string
+  url?: string
+  profile_pic_url?: string
+  profile_pic_url_hd?: string
+  followers?: number
+  likes?: number
+  like_count?: number
+  videos_count?: number
+  awg_engagement_rate?: number
+  comment_engagement_rate?: number
+  like_engagement_rate?: number
+  top_videos?: BrightDataTopVideo[]
+}
+
 type KVProfile = {
   status: string
   username: string
+  // KV’de tuttuğun string JSON sunucuda parse ediliyorsa buraya direkt obje geliyor
   result: {
     profile_summary?: string
     content_patterns?: string
@@ -24,20 +54,42 @@ type KVProfile = {
     growth_projection?: string
     final_summary?: string
   }
+  // KV’deki diğer alanlar (brightdata_raw, profile_pic_url vb.)
+  brightdata_raw?: BrightDataProfile
+  profile_pic_url?: string
+  profile_pic_key?: string
+  profile_pic_api_url?: string
   meta?: unknown
   ts?: number
+}
+
+// --------------------------------------------------------
+//  Helpers
+// --------------------------------------------------------
+
+const formatCompactNumber = (value?: number | null) => {
+  if (value == null || Number.isNaN(value)) return "-"
+  const n = Number(value)
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M"
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "K"
+  return n.toLocaleString("tr-TR")
+}
+
+const formatPercent = (value?: number | null) => {
+  if (value == null || Number.isNaN(value)) return "-"
+  return (value * 100).toFixed(1).replace(/\.0$/, "") + " %"
 }
 
 // --------------------------------------------------------
 //  ONBOARDING (TikTok username input ekranı)
 // --------------------------------------------------------
 
-const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => void }) => {
+const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => Promise<void> | void }) => {
   const [username, setUsername] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const handle = (e: React.FormEvent) => {
+  const handle = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
@@ -52,18 +104,22 @@ const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => void
       setError("Kullanıcı adı sadece harf, rakam, nokta ve alt çizgi içerebilir.")
       return
     }
-
     setLoading(true)
-    onSubmit(clean)
+    try {
+      await onSubmit(clean)
+    } catch (err: any) {
+      const message = err?.message ? String(err.message) : "Analiz başlatılamadı."
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="w-full max-w-lg">
         <div className="mb-6 text-center">
-          <p className="text-sm uppercase tracking-wide text-zinc-500">
-            Adım 1 / 3
-          </p>
+          <p className="text-sm uppercase tracking-wide text-zinc-500">Adım 1 / 2</p>
           <h1 className="mt-2 text-2xl font-semibold text-white">
             TikTok profilini analiz edelim
           </h1>
@@ -105,7 +161,7 @@ const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => void
           </button>
 
           <p className="text-[11px] text-zinc-500 text-center mt-2">
-            Şu an sadece TikTok profiliyle çalışıyoruz. Ödeme sonrası analiz birkaç dakika içinde hazırlanır.
+            Şu an sadece TikTok profiliyle çalışıyoruz. Kullanıcı adını girdiğinde analiz birkaç dakika içinde hazırlanır.
           </p>
         </form>
       </div>
@@ -114,7 +170,7 @@ const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => void
 }
 
 // --------------------------------------------------------
-//  Markdown renderer (mevcut kodun)
+//  Markdown renderer
 // --------------------------------------------------------
 
 const renderInlineMarkdown = (text: string, keyBase: string): ReactNode[] => {
@@ -221,10 +277,10 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       <blockquote key={quoteKey} className="space-y-2 border-l-2 border-zinc-700 pl-4 text-zinc-300">
         {paragraphs.length > 0
           ? paragraphs.map((paragraph, idx) => (
-            <p key={`${quoteKey}-p-${idx}`} className="leading-relaxed italic">
-              {renderInlineMarkdown(paragraph, `${quoteKey}-p-${idx}`)}
-            </p>
-          ))
+              <p key={`${quoteKey}-p-${idx}`} className="leading-relaxed italic">
+                {renderInlineMarkdown(paragraph, `${quoteKey}-p-${idx}`)}
+              </p>
+            ))
           : (
             <p className="leading-relaxed italic">
               {renderInlineMarkdown(quoteBuffer.join(" "), `${quoteKey}-p-0`)}
@@ -409,59 +465,90 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     }
   }
 
-  // onboarding submit → pricing
-  const handleUsernameSubmit = (cleanUsername: string) => {
-    router.push(`/pricing?username=${encodeURIComponent(cleanUsername)}`)
-  }
+  const fetchProfile = useCallback(async () => {
+    if (!user?.email) return null
+    setKvLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/profile?email=${encodeURIComponent(user.email)}`, { cache: "no-store" })
 
-  // KV'den profil verisini çek
-  useEffect(() => {
-    const run = async () => {
-      if (!user?.email) return
-      setKvLoading(true)
-      setError(null)
-      try {
-        const res = await fetch(`/api/profile?email=${encodeURIComponent(user.email)}`, { cache: "no-store" })
+      if (!res.ok) {
+        let message = `HTTP ${res.status}`
 
-        if (!res.ok) {
-          let message = `HTTP ${res.status}`
-
-          try {
-            const data = (await res.json()) as unknown
-            if (data && typeof data === "object" && "error" in data) {
-              message = String((data as { error: unknown }).error)
-            }
-          } catch {
-            // ignore
+        try {
+          const data = (await res.json()) as unknown
+          if (data && typeof data === "object" && "error" in data) {
+            message = String((data as { error: unknown }).error)
           }
-
-          throw new Error(message)
+        } catch {
+          // ignore
         }
 
-        const data = (await res.json()) as {
-          email: string
-          user: { id: string; email: string; name?: string; username?: string }
-          profile: KVProfile
-        }
-        setKvData(data)
-      } catch (err: any) {
-        setError(err?.message || "Beklenmeyen hata")
-      } finally {
-        setKvLoading(false)
+        throw new Error(message)
       }
+
+      const data = (await res.json()) as {
+        email: string
+        user: { id: string; email: string; name?: string; username?: string }
+        profile: KVProfile
+      }
+      setKvData(data)
+      return data
+    } catch (err: any) {
+      setError(err?.message || "Beklenmeyen hata")
+      throw err
+    } finally {
+      setKvLoading(false)
     }
-    run()
   }, [user?.email])
+
+  useEffect(() => {
+    fetchProfile().catch(() => undefined)
+  }, [fetchProfile])
+
+  // onboarding submit → analizi başlat
+  const handleUsernameSubmit = async (cleanUsername: string) => {
+    setError(null)
+    const res = await fetch("/api/start-analysis", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ username: cleanUsername }),
+    })
+
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`
+      try {
+        const data = (await res.json()) as unknown
+        if (data && typeof data === "object" && "error" in data) {
+          message = String((data as { error: unknown }).error)
+        }
+      } catch {
+        // ignore json parse errors
+      }
+      setError(message)
+      throw new Error(message)
+    }
+
+    await fetchProfile()
+  }
 
   const profileStatus = kvData?.profile?.status
   const username = kvData?.user?.username || kvData?.profile?.username
 
-  // awaiting_payment durumunda otomatik pricing'e yönlendir
+  // Analiz sonucu hazır olana kadar KV'yi tekrar tekrar çek
   useEffect(() => {
-    if (profileStatus === "awaiting_payment" && username) {
-      router.push(`/pricing?username=${encodeURIComponent(username)}`)
-    }
-  }, [profileStatus, username, router])
+    if (!username) return
+    const pendingStates = new Set(["pending", "analysis_running"])
+    if (!profileStatus || !pendingStates.has(profileStatus)) return
+
+    const id = setInterval(() => {
+      fetchProfile().catch(() => undefined)
+    }, 10000)
+
+    return () => clearInterval(id)
+  }, [profileStatus, username, fetchProfile])
 
   const formattedDate = useMemo(
     () =>
@@ -484,7 +571,11 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   }) => {
     if (!text) return null
     return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay }}
+      >
         <Card className="bg-zinc-900/50 border-zinc-800 p-6">
           <h3 className="text-xl font-semibold text-white mb-4">{title}</h3>
           <MarkdownRenderer text={text} />
@@ -494,11 +585,36 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   }
 
   // ----------------------------------------------------
-  //  GÖRÜNÜM DURUMLARI
+  //  Derived data (TikTok + growth)
   // ----------------------------------------------------
 
+  const bright: BrightDataProfile | undefined =
+    (kvData?.profile as unknown as { brightdata_raw?: BrightDataProfile })?.brightdata_raw
+
+  const profileResult = kvData?.profile?.result
+
+  const currentFollowers = bright?.followers ?? null
+  const totalLikes = bright?.likes ?? bright?.like_count ?? null
+  const videosCount = bright?.videos_count ?? null
+  const avgEngagement = bright?.awg_engagement_rate ?? null
+  const likeER = bright?.like_engagement_rate ?? null
+  const commentER = bright?.comment_engagement_rate ?? null
+
+  // Roadmap’e göre kabaca +%20 follower projeksiyonu
+  const projectedFollowers = currentFollowers ? Math.round(currentFollowers * 1.2) : null
+  const growthDelta = currentFollowers && projectedFollowers
+    ? projectedFollowers - currentFollowers
+    : null
+
+  const profilePicUrl =
+    kvData?.profile?.profile_pic_url ||
+    bright?.profile_pic_url_hd ||
+    bright?.profile_pic_url ||
+    undefined
+
   const showOnboarding = !kvLoading && !kvData?.profile?.username
-  const isAnalysisLoading = profileStatus === "paid" || profileStatus === "analysis_running"
+  const loadingStatuses = useMemo(() => new Set(["pending", "analysis_running", "paid", "awaiting_payment"]), [])
+  const isAnalysisLoading = profileStatus ? loadingStatuses.has(profileStatus) : false
 
   return (
     <div className="min-h-screen bg-black">
@@ -513,19 +629,16 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         {/* Header */}
         <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <svg
-                fill="currentColor"
-                viewBox="0 0 147 70"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-                className="text-[#e78a53] rounded-full size-8 w-8"
-              >
-                <path d="M56 50.2031V14H70V60.1562C70 65.5928 65.5928 70 60.1562 70C57.5605 70 54.9982 68.9992 53.1562 67.1573L0 14H19.7969L56 50.2031Z"></path>
-                <path d="M147 56H133V23.9531L100.953 56H133V70H96.6875C85.8144 70 77 61.1856 77 50.3125V14H91V46.1562L123.156 14H91V0H127.312C138.186 0 147 8.81439 147 19.6875V56Z"></path>
-              </svg>
-              <span className="text-xl font-bold text-white">Fenomen Dashboard</span>
-            </div>
+         <div className="flex items-center gap-2">
+                <Image
+                  src="/logo.png"
+                  alt="Fenomen Logo"
+                  width={40}
+                  height={40}
+                  className="h-8 w-28 object-contain"
+                  priority
+                />
+              </div>
 
             <Button
               onClick={handleLogout}
@@ -559,14 +672,14 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                   Analiz hazırlanıyor…
                 </h2>
                 <p className="text-sm text-zinc-400 max-w-md">
-                  TikTok profil verilerini topluyor, içerik performansını analiz ediyor ve büyüme yol haritanı oluşturuyoruz.
-                  Bu işlem genellikle 1–3 dakika sürer.
+                  TikTok profil verilerini topluyor, içerik performansını analiz ediyor ve büyüme
+                  yol haritanı oluşturuyoruz. Bu işlem genellikle 1–3 dakika sürer.
                 </p>
               </div>
             </div>
           )}
 
-          {/* 3) Profil & sonuçlar (eski dashboard görünümü) */}
+          {/* 3) Profil & sonuçlar – yeni layout */}
           {!showOnboarding && !isAnalysisLoading && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -580,179 +693,322 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                   {username ? <span className="ml-2 text-zinc-400 text-2xl">(@{username})</span> : null}
                 </h1>
                 <p className="text-zinc-400 text-lg">
-                  Hesabınızla ilgili güncel bilgiler burada.
+                  TikTok hesabının bugünkü durumu ve 6 aylık büyüme yolculuğu burada.
                 </p>
+                <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
+                  <span>{formattedDate}</span>
+                  {user?.userId && (
+                    <span className="text-zinc-600">
+                      Kullanıcı ID: <span className="font-mono">#{user.userId.substring(0, 8)}</span>
+                    </span>
+                  )}
+                </div>
                 {kvLoading && <p className="text-sm text-zinc-500 mt-2">KV verisi yükleniyor…</p>}
                 {error && <p className="text-sm text-red-400 mt-2">Hata: {error}</p>}
               </div>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {/* KPI Grid – mevcut durum + potansiyel */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+                {/* Takipçi & Potansiyel */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.05 }}
+                >
+                  <Card className="bg-zinc-900/60 border-zinc-800 p-6 h-full flex flex-col">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-zinc-400 text-xs uppercase tracking-wide mb-1">
+                          Takipçi & Büyüme Yolculuğu
+                        </p>
+                        <p className="text-2xl font-bold text-white">
+                          {formatCompactNumber(currentFollowers)}
+                        </p>
+                        <p className="text-xs text-zinc-500 mt-1">
+                          Şu anki takipçi sayın
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 bg-[#e78a53]/10 rounded-lg flex items-center justify-center text-[#e78a53] text-lg">
+                        ↑
+                      </div>
+                    </div>
+
+                    {projectedFollowers && (
+                      <div className="mt-4 border-t border-zinc-800 pt-3">
+                        <p className="text-[11px] text-zinc-400 mb-1">
+                          Roadmap&apos;i uygularsan tahmini 6 ay projeksiyonu:
+                        </p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-base font-semibold text-[#e78a53]">
+                            {formatCompactNumber(projectedFollowers)}
+                          </span>
+                          {growthDelta && (
+                            <span className="text-xs text-green-400">
+                              (+{formatCompactNumber(growthDelta)})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                </motion.div>
+
+                {/* Etkileşim */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 }}
                 >
-                  <Card className="bg-zinc-900/50 border-zinc-800 p-6">
-                    <div className="flex items-center justify-between">
+                  <Card className="bg-zinc-900/60 border-zinc-800 p-6 h-full flex flex-col">
+                    <p className="text-zinc-400 text-xs uppercase tracking-wide mb-1">
+                      Ortalama Etkileşim Oranı
+                    </p>
+                    <p className="text-2xl font-bold text-white">
+                      {avgEngagement ? formatPercent(avgEngagement) : "-"}
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      Son dönem genel ortalama (like + yorum)
+                    </p>
+                    <div className="mt-4 grid grid-cols-2 gap-3 text-[11px] text-zinc-400">
                       <div>
-                        <p className="text-zinc-400 text-sm mb-1">Kullanıcı ID</p>
-                        <p className="text-2xl font-bold text-white">#{user.userId.substring(0, 8)}</p>
+                        <p className="mb-0.5">Like ER</p>
+                        <p className="text-xs text-zinc-200">
+                          {likeER ? formatPercent(likeER) : "-"}
+                        </p>
                       </div>
-                      <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center">
-                        <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                          />
-                        </svg>
+                      <div>
+                        <p className="mb-0.5">Yorum ER</p>
+                        <p className="text-xs text-zinc-200">
+                          {commentER ? formatPercent(commentER) : "-"}
+                        </p>
                       </div>
                     </div>
                   </Card>
                 </motion.div>
 
+                {/* Video & Hero içerikler */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.15 }}
+                >
+                  <Card className="bg-zinc-900/60 border-zinc-800 p-6 h-full flex flex-col">
+                    <p className="text-zinc-400 text-xs uppercase tracking-wide mb-1">
+                      İçerik Hacmi
+                    </p>
+                    <p className="text-2xl font-bold text-white">
+                      {formatCompactNumber(videosCount)}
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      Toplam video sayısı
+                    </p>
+                    <div className="mt-4 border-t border-zinc-800 pt-3 text-xs text-zinc-400">
+                      Toplam beğeni:{" "}
+                      <span className="text-zinc-200">
+                        {formatCompactNumber(totalLikes)}
+                      </span>
+                    </div>
+                  </Card>
+                </motion.div>
+
+                {/* Sistem / meta */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                  <Card className="bg-zinc-900/50 border-zinc-800 p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-zinc-400 text-sm mb-1">Hesap Durumu</p>
-                        <p className="text-2xl font-bold text-green-400">Aktif</p>
-                      </div>
-                      <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
-                        <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </div>
+                  <Card className="bg-zinc-900/60 border-zinc-800 p-6 h-full flex flex-col justify-between">
+                    <div>
+                      <p className="text-zinc-400 text-xs uppercase tracking-wide mb-1">
+                        Hesap Durumu
+                      </p>
+                      <p className="text-2xl font-bold text-green-400">
+                        {profileStatus === "done" ? "Analiz Hazır" : "Aktif"}
+                      </p>
+                      <p className="text-xs text-zinc-500 mt-1">
+                        Fenomen analiz sistemi ile eşleştirildi.
+                      </p>
                     </div>
-                  </Card>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                  <Card className="bg-zinc-900/50 border-zinc-800 p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-zinc-400 text-sm mb-1">Üyelik Tarihi</p>
-                        <p className="text-xl font-bold text-white">{formattedDate}</p>
-                      </div>
-                      <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                        <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
+                    <div className="mt-4 border-t border-zinc-800 pt-3 text-[11px] text-zinc-500 space-y-1">
+                      {kvData?.profile?.ts && (
+                        <p>
+                          Son KV güncellemesi:{" "}
+                          <span className="text-zinc-300">
+                            {new Date(kvData.profile.ts).toLocaleString("tr-TR")}
+                          </span>
+                        </p>
+                      )}
+                      <p>
+                        E-posta:{" "}
+                        <span className="text-zinc-300">{kvData?.email}</span>
+                      </p>
                     </div>
                   </Card>
                 </motion.div>
               </div>
 
-              {/* User Info Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-              >
-                <Card className="bg-zinc-900/50 border-zinc-800 p-8">
-                  <h2 className="text-2xl font-bold text-white mb-6">Hesap Bilgileri</h2>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between py-3 border-b border-zinc-800">
-                      <span className="text-zinc-400">İsim Soyisim</span>
-                      <span className="text-white font-medium">{user.name || "Belirtilmemiş"}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between py-3 border-b border-zinc-800">
-                      <span className="text-zinc-400">E-posta Adresi</span>
-                      <span className="text-white font-medium">{user.email}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between py-3 border-b border-zinc-800">
-                      <span className="text-zinc-400">Kullanıcı ID</span>
-                      <span className="text-white font-medium">#{user.userId.substring(0, 16)}...</span>
-                    </div>
-
-                    <div className="flex items-center justify-between py-3">
-                      <span className="text-zinc-400">Hesap Oluşturulma</span>
-                      <span className="text-white font-medium">{formattedDate}</span>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-
-              {/* KV'den gelen PROFİL blokları */}
-              {kvData?.profile?.result && (
-                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <SectionCard title="Profil Özeti" text={kvData.profile.result.profile_summary} delay={0.1} />
-                  <SectionCard title="İçerik Desenleri" text={kvData.profile.result.content_patterns} delay={0.15} />
-                  <SectionCard title="Zayıf Noktalar & Öneriler" text={kvData.profile.result.weaknesses} delay={0.2} />
-                  <SectionCard title="30 Günlük Roadmap" text={kvData.profile.result.roadmap} delay={0.25} />
-                  <SectionCard title="Hook & Caption Bankası" text={kvData.profile.result.hooks} delay={0.3} />
-                  <SectionCard title="Markalaşma Önerileri" text={kvData.profile.result.branding} delay={0.35} />
-                  <SectionCard title="Büyüme Projeksiyonu" text={kvData.profile.result.growth_projection} delay={0.4} />
-                  <SectionCard title="Genel Değerlendirme" text={kvData.profile.result.final_summary} delay={0.45} />
-                </div>
-              )}
-
-              {/* Quick Actions */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6"
-              >
-                <Card className="bg-zinc-900/50 border-zinc-800 p-6 hover:border-[#e78a53]/50 transition-colors cursor-pointer">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-1">Yeni Proje Oluştur</h3>
-                      <p className="text-zinc-400 text-sm">Fenomen ile harika bir şeyler inşa etmeye başlayın</p>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="bg-zinc-900/50 border-zinc-800 p-6 hover:border-[#e78a53]/50 transition-colors cursor-pointer">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              {/* Ana layout: Sol profil / Sağ analiz kartları */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+                {/* Profil Kartı + Top Videolar */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.25 }}
+                  className="lg:col-span-1"
+                >
+                  <Card className="bg-zinc-900/60 border-zinc-800 p-6 h-full flex flex-col gap-6">
+                    <div className="flex items-start gap-4">
+                      {profilePicUrl ? (
+                        <img
+                          src={profilePicUrl}
+                          alt={bright?.nickname || username || "Profil fotoğrafı"}
+                          className="h-20 w-20 rounded-full border border-zinc-700 object-cover"
                         />
-                      </svg>
+                      ) : (
+                        <div className="h-20 w-20 rounded-full border border-zinc-800 bg-zinc-900 grid place-items-center text-zinc-500 text-2xl">
+                          {username?.[0]?.toUpperCase() ?? "@"}
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-zinc-400 mb-0.5">TikTok Profilin</p>
+                        <p className="text-lg font-semibold text-white truncate">
+                          {bright?.nickname || username || "-"}
+                        </p>
+                        {username && (
+                          <p className="text-sm text-zinc-500">@{username}</p>
+                        )}
+                        {bright?.biography && (
+                          <p className="mt-2 text-xs text-zinc-300 line-clamp-3">
+                            {bright.biography}
+                          </p>
+                        )}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {bright?.url && (
+                            <a
+                              href={bright.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs text-[#e78a53] underline-offset-2 hover:underline"
+                            >
+                              TikTok profili
+                            </a>
+                          )}
+                          {bright?.bio_link && (
+                            <a
+                              href={bright.bio_link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs text-[#e78a53] underline-offset-2 hover:underline"
+                            >
+                              Bio linki
+                            </a>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-1">Dokümantasyon</h3>
-                      <p className="text-zinc-400 text-sm">
-                        Hesabınızdan en iyi şekilde nasıl yararlanacağınızı öğrenin
-                      </p>
-                    </div>
+
+                    {bright?.top_videos && bright.top_videos.length > 0 && (
+                      <div className="border-t border-zinc-800 pt-4">
+                        <p className="text-xs font-medium text-zinc-300 mb-3">
+                          Hero içeriklerin (son dönem)
+                        </p>
+                        <div className="space-y-3">
+                          {bright.top_videos.slice(0, 3).map((video) => (
+                            <a
+                              key={video.video_id}
+                              href={video.video_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-3 group"
+                            >
+                              {video.cover_image ? (
+                                <img
+                                  src={video.cover_image}
+                                  alt=""
+                                  className="h-12 w-20 rounded-md object-cover border border-zinc-800 group-hover:border-[#e78a53]/60 transition-colors"
+                                />
+                              ) : (
+                                <div className="h-12 w-20 rounded-md bg-zinc-900 border border-zinc-800 grid place-items-center text-xs text-zinc-500">
+                                  Video
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-zinc-300 truncate group-hover:text-white transition-colors">
+                                  {video.video_id}
+                                </p>
+                                <p className="text-[11px] text-zinc-500 mt-0.5">
+                                  {formatCompactNumber(video.playcount)} izlenme ·{" "}
+                                  {formatCompactNumber(video.diggcount)} like
+                                </p>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                </motion.div>
+
+                {/* Analiz & Strateji Kartları */}
+                <div className="lg:col-span-2 space-y-8">
+                  {/* Analiz bloğu */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SectionCard
+                      title="Profil Özeti"
+                      text={profileResult?.profile_summary}
+                      delay={0.1}
+                    />
+                    <SectionCard
+                      title="İçerik Performans Desenleri"
+                      text={profileResult?.content_patterns}
+                      delay={0.15}
+                    />
                   </div>
-                </Card>
-              </motion.div>
+
+                  {/* Zayıflar & Roadmap */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SectionCard
+                      title="Zayıf Noktalar & Gelişim Alanları"
+                      text={profileResult?.weaknesses}
+                      delay={0.2}
+                    />
+                    <SectionCard
+                      title="30 Günlük İçerik Roadmap"
+                      text={profileResult?.roadmap}
+                      delay={0.25}
+                    />
+                  </div>
+
+                  {/* Hook & Marka */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SectionCard
+                      title="Hook & Caption Bankası"
+                      text={profileResult?.hooks}
+                      delay={0.3}
+                    />
+                    <SectionCard
+                      title="Markalaşma & Kimlik Önerileri"
+                      text={profileResult?.branding}
+                      delay={0.35}
+                    />
+                  </div>
+
+                  {/* Büyüme & Sonuç */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SectionCard
+                      title="Büyüme Projeksiyonu (6 Ay)"
+                      text={profileResult?.growth_projection}
+                      delay={0.4}
+                    />
+                    <SectionCard
+                      title="Genel Değerlendirme & Sonuç"
+                      text={profileResult?.final_summary}
+                      delay={0.45}
+                    />
+                  </div>
+                </div>
+              </div>
             </motion.div>
           )}
         </main>

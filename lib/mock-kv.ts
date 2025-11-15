@@ -98,6 +98,30 @@ export async function mockGetProfileByUsername(username: string): Promise<MockPr
   return resultsByUsername.get(clean) ?? null
 }
 
+export async function mockSetUserUsername(userId: string, username: string): Promise<UserPublic | null> {
+  const user = usersById.get(userId)
+  if (!user) {
+    return null
+  }
+
+  user.username = username
+  usersById.set(userId, user)
+  return toPublicUser(user)
+}
+
+export async function mockSavePendingResult(username: string, status: string = "analysis_running"): Promise<MockProfile> {
+  const clean = username.toLowerCase()
+  const payload: MockProfile = {
+    status,
+    username: clean,
+    result: {},
+    ts: Date.now(),
+  }
+
+  resultsByUsername.set(clean, payload)
+  return payload
+}
+
 export async function mockGetProfileForEmail(email: string): Promise<{
   email: string
   user: UserPublic
