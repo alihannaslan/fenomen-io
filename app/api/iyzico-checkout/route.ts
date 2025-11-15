@@ -1,4 +1,7 @@
 // app/api/iyzico-checkout/route.ts
+
+export const runtime = "edge"
+
 import { NextRequest, NextResponse } from "next/server"
 
 /**
@@ -6,7 +9,6 @@ import { NextRequest, NextResponse } from "next/server"
  * Bu endpoint artık sadece demo amaçlı bir response döndürüyor.
  */
 export async function POST(req: NextRequest) {
-  // İleride farklı bir ödeme altyapısına geçtiğinde burayı güncelleyebilirsin.
   return NextResponse.json({
     ok: true,
     provider: "none",
