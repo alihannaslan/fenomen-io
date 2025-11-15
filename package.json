@@ -51,7 +51,6 @@
     "framer-motion": "latest",
     "geist": "latest",
     "input-otp": "1.4.1",
-    "iyzipay": "^2.0.64",
     "jose": "latest",
     "lucide-react": "^0.454.0",
     "motion": "latest",
