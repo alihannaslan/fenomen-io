@@ -28,6 +28,95 @@ type KVProfile = {
   ts?: number
 }
 
+// --------------------------------------------------------
+//  ONBOARDING (TikTok username input ekranı)
+// --------------------------------------------------------
+
+const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => void }) => {
+  const [username, setUsername] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const handle = (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    let raw = username.trim()
+    if (!raw) {
+      setError("Lütfen TikTok kullanıcı adını gir.")
+      return
+    }
+
+    const clean = raw.startsWith("@") ? raw.slice(1) : raw
+    if (!clean.match(/^[a-zA-Z0-9._]+$/)) {
+      setError("Kullanıcı adı sadece harf, rakam, nokta ve alt çizgi içerebilir.")
+      return
+    }
+
+    setLoading(true)
+    onSubmit(clean)
+  }
+
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center px-4">
+      <div className="w-full max-w-lg">
+        <div className="mb-6 text-center">
+          <p className="text-sm uppercase tracking-wide text-zinc-500">
+            Adım 1 / 3
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold text-white">
+            TikTok profilini analiz edelim
+          </h1>
+          <p className="mt-2 text-sm text-zinc-400">
+            Profil skorun, büyüme yol haritan ve içerik fikirlerin birkaç dakika içinde hazır olsun.
+          </p>
+        </div>
+
+        <form
+          onSubmit={handle}
+          className="rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur px-6 py-6 space-y-4"
+        >
+          <label className="block text-sm font-medium text-zinc-300">
+            TikTok kullanıcı adın
+          </label>
+
+          <div className="flex gap-2">
+            <div className="inline-flex items-center rounded-xl border border-zinc-700 bg-zinc-800/60 px-3 text-sm text-zinc-400">
+              @
+            </div>
+
+            <input
+              type="text"
+              placeholder="ornekhesap"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-[#e78a53]"
+            />
+          </div>
+
+          {error && <p className="text-xs text-red-400">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-4 w-full rounded-xl bg-[#e78a53] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+          >
+            {loading ? "Yönlendiriliyor…" : "TikTok Profilimi Analiz Et"}
+          </button>
+
+          <p className="text-[11px] text-zinc-500 text-center mt-2">
+            Şu an sadece TikTok profiliyle çalışıyoruz. Ödeme sonrası analiz birkaç dakika içinde hazırlanır.
+          </p>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// --------------------------------------------------------
+//  Markdown renderer (mevcut kodun)
+// --------------------------------------------------------
+
 const renderInlineMarkdown = (text: string, keyBase: string): ReactNode[] => {
   if (!text) return []
 
@@ -293,10 +382,14 @@ const MarkdownRenderer = ({ text }: { text: string }) => {
   )
 }
 
+// --------------------------------------------------------
+//  DASHBOARD CLIENT
+// --------------------------------------------------------
+
 export default function DashboardClient({ user }: DashboardClientProps) {
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [kvLoading, setKvLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [kvData, setKvData] = useState<{
     email: string
@@ -316,11 +409,16 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     }
   }
 
-  // --- KV'den profil verisini çek ---
+  // onboarding submit → pricing
+  const handleUsernameSubmit = (cleanUsername: string) => {
+    router.push(`/pricing?username=${encodeURIComponent(cleanUsername)}`)
+  }
+
+  // KV'den profil verisini çek
   useEffect(() => {
     const run = async () => {
       if (!user?.email) return
-      setLoading(true)
+      setKvLoading(true)
       setError(null)
       try {
         const res = await fetch(`/api/profile?email=${encodeURIComponent(user.email)}`, { cache: "no-store" })
@@ -331,11 +429,10 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           try {
             const data = (await res.json()) as unknown
             if (data && typeof data === "object" && "error" in data) {
-              // data.error string değilse de String(...) ile güvenli dönüştür
               message = String((data as { error: unknown }).error)
             }
           } catch {
-            // JSON değilse sessizce geç; message HTTP durumuyla kalır
+            // ignore
           }
 
           throw new Error(message)
@@ -350,11 +447,21 @@ export default function DashboardClient({ user }: DashboardClientProps) {
       } catch (err: any) {
         setError(err?.message || "Beklenmeyen hata")
       } finally {
-        setLoading(false)
+        setKvLoading(false)
       }
     }
     run()
   }, [user?.email])
+
+  const profileStatus = kvData?.profile?.status
+  const username = kvData?.user?.username || kvData?.profile?.username
+
+  // awaiting_payment durumunda otomatik pricing'e yönlendir
+  useEffect(() => {
+    if (profileStatus === "awaiting_payment" && username) {
+      router.push(`/pricing?username=${encodeURIComponent(username)}`)
+    }
+  }, [profileStatus, username, router])
 
   const formattedDate = useMemo(
     () =>
@@ -366,7 +473,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     []
   )
 
-  // küçük yardımcı bileşen
   const SectionCard = ({
     title,
     text,
@@ -387,7 +493,12 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     )
   }
 
-  const username = kvData?.user?.username || kvData?.profile?.username
+  // ----------------------------------------------------
+  //  GÖRÜNÜM DURUMLARI
+  // ----------------------------------------------------
+
+  const showOnboarding = !kvLoading && !kvData?.profile?.username
+  const isAnalysisLoading = profileStatus === "paid" || profileStatus === "analysis_running"
 
   return (
     <div className="min-h-screen bg-black">
@@ -429,154 +540,221 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            {/* Welcome Section */}
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold text-white mb-2">
-                Hoş geldin{user.name ? `, ${user.name}` : ""}!
-                {username ? <span className="ml-2 text-zinc-400 text-2xl">(@{username})</span> : null}
-              </h1>
-              <p className="text-zinc-400 text-lg">
-                Hesabınızla ilgili güncel bilgiler burada.
-              </p>
-              {loading && <p className="text-sm text-zinc-500 mt-2">KV verisi yükleniyor…</p>}
-              {error && <p className="text-sm text-red-400 mt-2">Hata: {error}</p>}
-            </div>
+          {/* KV load hatası */}
+          {error && !showOnboarding && !isAnalysisLoading && (
+            <p className="mb-4 text-sm text-red-400">Hata: {error}</p>
+          )}
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-                <Card className="bg-zinc-900/50 border-zinc-800 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-zinc-400 text-sm mb-1">Kullanıcı ID</p>
-                      <p className="text-2xl font-bold text-white">#{user.userId.substring(0, 8)}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
+          {/* 1) Onboarding */}
+          {showOnboarding && (
+            <UsernameOnboarding onSubmit={handleUsernameSubmit} />
+          )}
 
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
-                <Card className="bg-zinc-900/50 border-zinc-800 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-zinc-400 text-sm mb-1">Hesap Durumu</p>
-                      <p className="text-2xl font-bold text-green-400">Aktif</p>
-                    </div>
-                    <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
-                <Card className="bg-zinc-900/50 border-zinc-800 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-zinc-400 text-sm mb-1">Üyelik Tarihi</p>
-                      <p className="text-xl font-bold text-white">{formattedDate}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            </div>
-
-            {/* User Info Card */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
-              <Card className="bg-zinc-900/50 border-zinc-800 p-8">
-                <h2 className="text-2xl font-bold text-white mb-6">Hesap Bilgileri</h2>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between py-3 border-b border-zinc-800">
-                    <span className="text-zinc-400">İsim Soyisim</span>
-                    <span className="text-white font-medium">{user.name || "Belirtilmemiş"}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-3 border-b border-zinc-800">
-                    <span className="text-zinc-400">E-posta Adresi</span>
-                    <span className="text-white font-medium">{user.email}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-3 border-b border-zinc-800">
-                    <span className="text-zinc-400">Kullanıcı ID</span>
-                    <span className="text-white font-medium">#{user.userId.substring(0, 16)}...</span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-3">
-                    <span className="text-zinc-400">Hesap Oluşturulma</span>
-                    <span className="text-white font-medium">{formattedDate}</span>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-
-            {/* --- KV'den gelen PROFIL blokları --- */}
-            {kvData?.profile?.result && (
-              <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <SectionCard title="Profil Özeti" text={kvData.profile.result.profile_summary} delay={0.1} />
-                <SectionCard title="İçerik Desenleri" text={kvData.profile.result.content_patterns} delay={0.15} />
-                <SectionCard title="Zayıf Noktalar & Öneriler" text={kvData.profile.result.weaknesses} delay={0.2} />
-                <SectionCard title="30 Günlük Roadmap" text={kvData.profile.result.roadmap} delay={0.25} />
-                <SectionCard title="Hook & Caption Bankası" text={kvData.profile.result.hooks} delay={0.3} />
-                <SectionCard title="Markalaşma Önerileri" text={kvData.profile.result.branding} delay={0.35} />
-                <SectionCard title="Büyüme Projeksiyonu" text={kvData.profile.result.growth_projection} delay={0.4} />
-                <SectionCard title="Genel Değerlendirme" text={kvData.profile.result.final_summary} delay={0.45} />
+          {/* 2) Analiz hazırlanıyor */}
+          {!showOnboarding && isAnalysisLoading && (
+            <div className="min-h-[50vh] flex flex-col items-center justify-center text-center space-y-4">
+              <div className="w-10 h-10 border-2 border-[#e78a53]/40 border-t-[#e78a53] rounded-full animate-spin" />
+              <div>
+                <h2 className="text-xl font-semibold text-white mb-2">
+                  Analiz hazırlanıyor…
+                </h2>
+                <p className="text-sm text-zinc-400 max-w-md">
+                  TikTok profil verilerini topluyor, içerik performansını analiz ediyor ve büyüme yol haritanı oluşturuyoruz.
+                  Bu işlem genellikle 1–3 dakika sürer.
+                </p>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Quick Actions */}
+          {/* 3) Profil & sonuçlar (eski dashboard görünümü) */}
+          {!showOnboarding && !isAnalysisLoading && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6"
+              transition={{ duration: 0.5 }}
             >
-              <Card className="bg-zinc-900/50 border-zinc-800 p-6 hover:border-[#e78a53]/50 transition-colors cursor-pointer">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-1">Yeni Proje Oluştur</h3>
-                    <p className="text-zinc-400 text-sm">Fenomen ile harika bir şeyler inşa etmeye başlayın</p>
-                  </div>
-                </div>
-              </Card>
+              {/* Welcome Section */}
+              <div className="mb-8">
+                <h1 className="text-4xl font-bold text-white mb-2">
+                  Hoş geldin{user.name ? `, ${user.name}` : ""}!
+                  {username ? <span className="ml-2 text-zinc-400 text-2xl">(@{username})</span> : null}
+                </h1>
+                <p className="text-zinc-400 text-lg">
+                  Hesabınızla ilgili güncel bilgiler burada.
+                </p>
+                {kvLoading && <p className="text-sm text-zinc-500 mt-2">KV verisi yükleniyor…</p>}
+                {error && <p className="text-sm text-red-400 mt-2">Hata: {error}</p>}
+              </div>
 
-              <Card className="bg-zinc-900/50 border-zinc-800 p-6 hover:border-[#e78a53]/50 transition-colors cursor-pointer">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                  <Card className="bg-zinc-900/50 border-zinc-800 p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-zinc-400 text-sm mb-1">Kullanıcı ID</p>
+                        <p className="text-2xl font-bold text-white">#{user.userId.substring(0, 8)}</p>
+                      </div>
+                      <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <Card className="bg-zinc-900/50 border-zinc-800 p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-zinc-400 text-sm mb-1">Hesap Durumu</p>
+                        <p className="text-2xl font-bold text-green-400">Aktif</p>
+                      </div>
+                      <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  <Card className="bg-zinc-900/50 border-zinc-800 p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-zinc-400 text-sm mb-1">Üyelik Tarihi</p>
+                        <p className="text-xl font-bold text-white">{formattedDate}</p>
+                      </div>
+                      <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              </div>
+
+              {/* User Info Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
+                <Card className="bg-zinc-900/50 border-zinc-800 p-8">
+                  <h2 className="text-2xl font-bold text-white mb-6">Hesap Bilgileri</h2>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between py-3 border-b border-zinc-800">
+                      <span className="text-zinc-400">İsim Soyisim</span>
+                      <span className="text-white font-medium">{user.name || "Belirtilmemiş"}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between py-3 border-b border-zinc-800">
+                      <span className="text-zinc-400">E-posta Adresi</span>
+                      <span className="text-white font-medium">{user.email}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between py-3 border-b border-zinc-800">
+                      <span className="text-zinc-400">Kullanıcı ID</span>
+                      <span className="text-white font-medium">#{user.userId.substring(0, 16)}...</span>
+                    </div>
+
+                    <div className="flex items-center justify-between py-3">
+                      <span className="text-zinc-400">Hesap Oluşturulma</span>
+                      <span className="text-white font-medium">{formattedDate}</span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-1">Dokümantasyon</h3>
-                    <p className="text-zinc-400 text-sm">Hesabınızdan en iyi şekilde nasıl yararlanacağınızı öğrenin</p>
-                  </div>
+                </Card>
+              </motion.div>
+
+              {/* KV'den gelen PROFİL blokları */}
+              {kvData?.profile?.result && (
+                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <SectionCard title="Profil Özeti" text={kvData.profile.result.profile_summary} delay={0.1} />
+                  <SectionCard title="İçerik Desenleri" text={kvData.profile.result.content_patterns} delay={0.15} />
+                  <SectionCard title="Zayıf Noktalar & Öneriler" text={kvData.profile.result.weaknesses} delay={0.2} />
+                  <SectionCard title="30 Günlük Roadmap" text={kvData.profile.result.roadmap} delay={0.25} />
+                  <SectionCard title="Hook & Caption Bankası" text={kvData.profile.result.hooks} delay={0.3} />
+                  <SectionCard title="Markalaşma Önerileri" text={kvData.profile.result.branding} delay={0.35} />
+                  <SectionCard title="Büyüme Projeksiyonu" text={kvData.profile.result.growth_projection} delay={0.4} />
+                  <SectionCard title="Genel Değerlendirme" text={kvData.profile.result.final_summary} delay={0.45} />
                 </div>
-              </Card>
+              )}
+
+              {/* Quick Actions */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6"
+              >
+                <Card className="bg-zinc-900/50 border-zinc-800 p-6 hover:border-[#e78a53]/50 transition-colors cursor-pointer">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-[#e78a53]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-[#e78a53]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-1">Yeni Proje Oluştur</h3>
+                      <p className="text-zinc-400 text-sm">Fenomen ile harika bir şeyler inşa etmeye başlayın</p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="bg-zinc-900/50 border-zinc-800 p-6 hover:border-[#e78a53]/50 transition-colors cursor-pointer">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-1">Dokümantasyon</h3>
+                      <p className="text-zinc-400 text-sm">
+                        Hesabınızdan en iyi şekilde nasıl yararlanacağınızı öğrenin
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
             </motion.div>
-          </motion.div>
+          )}
         </main>
       </div>
     </div>
