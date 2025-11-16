@@ -43,7 +43,6 @@ type BrightDataProfile = {
 type KVProfile = {
   status: string
   username: string
-  // KV’de tuttuğun string JSON sunucuda parse ediliyorsa buraya direkt obje geliyor
   result: {
     profile_summary?: string
     content_patterns?: string
@@ -54,7 +53,6 @@ type KVProfile = {
     growth_projection?: string
     final_summary?: string
   }
-  // KV’deki diğer alanlar (brightdata_raw, profile_pic_url vb.)
   brightdata_raw?: BrightDataProfile
   profile_pic_url?: string
   profile_pic_key?: string
@@ -189,21 +187,18 @@ const renderInlineMarkdown = (text: string, keyBase: string): ReactNode[] => {
     }
 
     if (match[1]) {
-      // **bold**
       nodes.push(
         <strong key={`${keyBase}-strong-${matchIndex}`}>
           {renderInlineMarkdown(match[1], `${keyBase}-strong-${matchIndex}`)}
         </strong>
       )
     } else if (match[2]) {
-      // *italic*
       nodes.push(
         <em key={`${keyBase}-em-${matchIndex}`}>
           {renderInlineMarkdown(match[2], `${keyBase}-em-${matchIndex}`)}
         </em>
       )
     } else if (match[3]) {
-      // `code`
       nodes.push(
         <code
           key={`${keyBase}-code-${matchIndex}`}
@@ -213,7 +208,6 @@ const renderInlineMarkdown = (text: string, keyBase: string): ReactNode[] => {
         </code>
       )
     } else if (match[4] && match[5]) {
-      // [label](url)
       nodes.push(
         <a
           key={`${keyBase}-link-${matchIndex}`}
@@ -249,7 +243,6 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
   let inCodeBlock = false
   let codeBuffer: string[] = []
 
-  // tablo: header + rows
   let tableBuffer: { header: string[] | null; rows: string[][] } | null = null
 
   const flushList = () => {
@@ -375,7 +368,6 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
   for (const line of lines) {
     const trimmedLine = line.trim()
 
-    // CODE BLOCK MODU
     if (inCodeBlock) {
       if (trimmedLine.startsWith("```") || trimmedLine.startsWith("~~~")) {
         flushCode()
@@ -387,7 +379,6 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       continue
     }
 
-    // Kod bloğu başlangıcı
     if (trimmedLine.startsWith("```") || trimmedLine.startsWith("~~~")) {
       flushList()
       flushQuote()
@@ -397,7 +388,6 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       continue
     }
 
-    // Boş satır
     if (!trimmedLine) {
       flushList()
       flushQuote()
@@ -405,27 +395,22 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       continue
     }
 
-    // TABLO satırı mı?
     const isTableRow = /^\|(.+)\|$/.test(trimmedLine)
     if (isTableRow) {
-      // |---|---| ayırıcı satır mı?
       const isSeparator = /^\|\s*(:?-+:?\s*\|)+\s*$/.test(trimmedLine)
 
       if (isSeparator) {
-        // header sonrası separator satırı: sadece yutuyoruz
         if (!tableBuffer) {
           // header yoksa görmezden gel
         }
         continue
       }
 
-      // gerçek hücreler
       const cells = trimmedLine
         .split("|")
         .slice(1, -1)
         .map((c) => c.trim())
 
-      // tablo ilk defa başlıyorsa: önce diğer blokları flush et
       if (!tableBuffer) {
         flushList()
         flushQuote()
@@ -435,17 +420,14 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
           rows: [],
         }
       } else {
-        // mevcut tabloya satır ekle
         tableBuffer.rows.push(cells)
       }
 
       continue
     } else {
-      // tablo bitiyorsa flush et
       flushTable()
     }
 
-    // QUOTE satırı
     if (trimmedLine.startsWith(">")) {
       flushList()
       if (!quoteBuffer) {
@@ -457,7 +439,6 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
 
     flushQuote()
 
-    // BAŞLIK
     const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/)
     if (headingMatch) {
       flushList()
@@ -481,7 +462,6 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       continue
     }
 
-    // BULLET list
     if (/^[-*+]\s+/.test(trimmedLine)) {
       const item = trimmedLine.replace(/^[-*+]\s+/, "")
       if (!listBuffer || listBuffer.ordered) {
@@ -492,7 +472,6 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       continue
     }
 
-    // NUMARALI list
     if (/^\d+\.\s+/.test(trimmedLine)) {
       const item = trimmedLine.replace(/^\d+\.\s+/, "")
       if (!listBuffer || !listBuffer.ordered) {
@@ -503,7 +482,6 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       continue
     }
 
-    // HR (---)
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmedLine)) {
       flushList()
       flushTable()
@@ -512,7 +490,6 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       continue
     }
 
-    // Normal paragraf
     flushList()
 
     blocks.push(
@@ -524,7 +501,6 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
     blockIndex += 1
   }
 
-  // Loop bitince kalan buffer'ları flush et
   if (inCodeBlock) {
     flushCode()
   }
@@ -581,42 +557,79 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     }
   }
 
-  const fetchProfile = useCallback(async () => {
-    if (!user?.email) return null
-    setKvLoading(true)
-    setError(null)
-    try {
-      const res = await fetch(`/api/profile?email=${encodeURIComponent(user.email)}`, { cache: "no-store" })
+  // ✅ Artık /api/profile yerine /api/result/<username> çağırıyoruz
+  const fetchProfile = useCallback(
+    async (explicitUsername?: string | null) => {
+      if (!user && !explicitUsername) return null
+      setKvLoading(true)
+      setError(null)
+      try {
+        const u: any = user || {}
 
-      if (!res.ok) {
-        let message = `HTTP ${res.status}`
+        const baseUsername =
+          explicitUsername ||
+          u.username ||
+          u.tiktokUsername ||
+          u.handle ||
+          u.tiktok_username
 
-        try {
-          const data = (await res.json()) as unknown
-          if (data && typeof data === "object" && "error" in data) {
-            message = String((data as { error: unknown }).error)
-          }
-        } catch {
-          // ignore
+        if (!baseUsername) {
+          setError("Kullanıcı adı bulunamadı. Lütfen TikTok kullanıcı adını gir.")
+          return null
         }
 
-        throw new Error(message)
-      }
+        const cleanUsername = String(baseUsername).replace(/^@/, "").trim()
 
-      const data = (await res.json()) as {
-        email: string
-        user: { id: string; email: string; name?: string; username?: string }
-        profile: KVProfile
+        const res = await fetch(`/api/result/${encodeURIComponent(cleanUsername)}`, {
+          cache: "no-store",
+        })
+
+        if (res.status === 404) {
+          // Henüz analiz yoksa onboarding görünsün, hata göstermeyelim
+          setKvData(null)
+          return null
+        }
+
+        if (!res.ok) {
+          let message = `HTTP ${res.status}`
+
+          try {
+            const data = (await res.json()) as unknown
+            if (data && typeof data === "object" && "error" in data) {
+              message = String((data as { error: unknown }).error)
+            }
+          } catch {
+            // ignore
+          }
+
+          throw new Error(message)
+        }
+
+        const profile = (await res.json()) as KVProfile
+
+        const newData = {
+          email: user?.email ?? "",
+          user: {
+            id: (u.userId || u.id || "") as string,
+            email: user?.email ?? "",
+            name: u.name as string | undefined,
+            username: cleanUsername,
+          },
+          profile,
+        }
+
+        setKvData(newData)
+        return newData
+      } catch (err: any) {
+        console.error("Dashboard fetchProfile error:", err)
+        setError(err?.message || "Beklenmeyen hata")
+        throw err
+      } finally {
+        setKvLoading(false)
       }
-      setKvData(data)
-      return data
-    } catch (err: any) {
-      setError(err?.message || "Beklenmeyen hata")
-      throw err
-    } finally {
-      setKvLoading(false)
-    }
-  }, [user?.email])
+    },
+    [user]
+  )
 
   useEffect(() => {
     fetchProfile().catch(() => undefined)
@@ -647,7 +660,8 @@ export default function DashboardClient({ user }: DashboardClientProps) {
       throw new Error(message)
     }
 
-    await fetchProfile()
+    // ✅ Analiz başlattıktan sonra bu username ile KV'den çek
+    await fetchProfile(cleanUsername)
   }
 
   const profileStatus = kvData?.profile?.status
@@ -660,7 +674,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     if (!profileStatus || !pendingStates.has(profileStatus)) return
 
     const id = setInterval(() => {
-      fetchProfile().catch(() => undefined)
+      fetchProfile(username).catch(() => undefined)
     }, 10000)
 
     return () => clearInterval(id)
@@ -700,10 +714,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     )
   }
 
-  // ----------------------------------------------------
-  //  Derived data (TikTok + growth)
-  // ----------------------------------------------------
-
   const bright: BrightDataProfile | undefined =
     (kvData?.profile as unknown as { brightdata_raw?: BrightDataProfile })?.brightdata_raw
 
@@ -716,7 +726,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   const likeER = bright?.like_engagement_rate ?? null
   const commentER = bright?.comment_engagement_rate ?? null
 
-  // Roadmap’e göre kabaca +%20 follower projeksiyonu
   const projectedFollowers = currentFollowers ? Math.round(currentFollowers * 1.2) : null
   const growthDelta = currentFollowers && projectedFollowers
     ? projectedFollowers - currentFollowers
@@ -734,15 +743,12 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-black to-zinc-900" />
 
-      {/* Decorative elements */}
       <div className="absolute top-20 right-20 w-72 h-72 bg-[#e78a53]/10 rounded-full blur-3xl" />
       <div className="absolute bottom-20 left-20 w-96 h-96 bg-[#e78a53]/5 rounded-full blur-3xl" />
 
       <div className="relative z-10">
-        {/* Header */}
         <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -767,19 +773,15 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* KV load hatası */}
           {error && !showOnboarding && !isAnalysisLoading && (
             <p className="mb-4 text-sm text-red-400">Hata: {error}</p>
           )}
 
-          {/* 1) Onboarding */}
           {showOnboarding && (
             <UsernameOnboarding onSubmit={handleUsernameSubmit} />
           )}
 
-          {/* 2) Analiz hazırlanıyor */}
           {!showOnboarding && isAnalysisLoading && (
             <div className="min-h-[50vh] flex flex-col items-center justify-center text-center space-y-4">
               <div className="w-10 h-10 border-2 border-[#e78a53]/40 border-t-[#e78a53] rounded-full animate-spin" />
@@ -795,14 +797,12 @@ export default function DashboardClient({ user }: DashboardClientProps) {
             </div>
           )}
 
-          {/* 3) Profil & sonuçlar – yeni layout */}
           {!showOnboarding && !isAnalysisLoading && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              {/* Welcome Section */}
               <div className="mb-8">
                 <h1 className="text-4xl font-bold text-white mb-2">
                   Hoş geldin{user.name ? `, ${user.name}` : ""}!
@@ -813,9 +813,9 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
                   <span>{formattedDate}</span>
-                  {user?.userId && (
+                  { (user as any)?.userId && (
                     <span className="text-zinc-600">
-                      Kullanıcı ID: <span className="font-mono">#{user.userId.substring(0, 8)}</span>
+                      Kullanıcı ID: <span className="font-mono">#{String((user as any).userId).substring(0, 8)}</span>
                     </span>
                   )}
                 </div>
@@ -823,9 +823,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 {error && <p className="text-sm text-red-400 mt-2">Hata: {error}</p>}
               </div>
 
-              {/* KPI Grid – mevcut durum + potansiyel */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-                {/* Takipçi & Potansiyel */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -869,7 +867,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                   </Card>
                 </motion.div>
 
-                {/* Etkileşim */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -902,7 +899,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                   </Card>
                 </motion.div>
 
-                {/* Video & Hero içerikler */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -927,7 +923,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                   </Card>
                 </motion.div>
 
-                {/* Sistem / meta */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -963,9 +958,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 </motion.div>
               </div>
 
-              {/* Ana layout: Sol profil / Sağ analiz kartları */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-                {/* Profil Kartı + Top Videolar */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1066,9 +1059,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                   </Card>
                 </motion.div>
 
-                {/* Analiz & Strateji Kartları */}
                 <div className="lg:col-span-2 space-y-8">
-                  {/* Analiz bloğu */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <SectionCard
                       title="Profil Özeti"
@@ -1082,7 +1073,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                     />
                   </div>
 
-                  {/* Zayıflar & Roadmap */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <SectionCard
                       title="Zayıf Noktalar & Gelişim Alanları"
@@ -1096,7 +1086,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                     />
                   </div>
 
-                  {/* Hook & Marka */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <SectionCard
                       title="Hook & Caption Bankası"
@@ -1110,7 +1099,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                     />
                   </div>
 
-                  {/* Büyüme & Sonuç */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <SectionCard
                       title="Büyüme Projeksiyonu (6 Ay)"
