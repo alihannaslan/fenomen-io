@@ -170,7 +170,7 @@ const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => Prom
 }
 
 // --------------------------------------------------------
-//  Markdown renderer
+//  Markdown renderer (inline + block + table support)
 // --------------------------------------------------------
 
 const renderInlineMarkdown = (text: string, keyBase: string): ReactNode[] => {
@@ -189,24 +189,31 @@ const renderInlineMarkdown = (text: string, keyBase: string): ReactNode[] => {
     }
 
     if (match[1]) {
+      // **bold**
       nodes.push(
         <strong key={`${keyBase}-strong-${matchIndex}`}>
           {renderInlineMarkdown(match[1], `${keyBase}-strong-${matchIndex}`)}
         </strong>
       )
     } else if (match[2]) {
+      // *italic*
       nodes.push(
         <em key={`${keyBase}-em-${matchIndex}`}>
           {renderInlineMarkdown(match[2], `${keyBase}-em-${matchIndex}`)}
         </em>
       )
     } else if (match[3]) {
+      // `code`
       nodes.push(
-        <code key={`${keyBase}-code-${matchIndex}`} className="rounded bg-zinc-800 px-1 py-0.5 text-xs">
+        <code
+          key={`${keyBase}-code-${matchIndex}`}
+          className="rounded bg-zinc-800 px-1 py-0.5 text-xs"
+        >
           {match[3]}
         </code>
       )
     } else if (match[4] && match[5]) {
+      // [label](url)
       nodes.push(
         <a
           key={`${keyBase}-link-${matchIndex}`}
@@ -242,6 +249,9 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
   let inCodeBlock = false
   let codeBuffer: string[] = []
 
+  // tablo: header + rows
+  let tableBuffer: { header: string[] | null; rows: string[][] } | null = null
+
   const flushList = () => {
     if (!listBuffer) return
 
@@ -274,7 +284,10 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       .filter(Boolean)
 
     blocks.push(
-      <blockquote key={quoteKey} className="space-y-2 border-l-2 border-zinc-700 pl-4 text-zinc-300">
+      <blockquote
+        key={quoteKey}
+        className="space-y-2 border-l-2 border-zinc-700 pl-4 text-zinc-300"
+      >
         {paragraphs.length > 0
           ? paragraphs.map((paragraph, idx) => (
               <p key={`${quoteKey}-p-${idx}`} className="leading-relaxed italic">
@@ -313,9 +326,56 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
     codeBuffer = []
   }
 
+  const flushTable = () => {
+    if (!tableBuffer) return
+
+    const tableKey = `md-table-${blockIndex}`
+    const header = tableBuffer.header
+    const rows = tableBuffer.rows
+
+    blocks.push(
+      <div key={tableKey} className="overflow-x-auto">
+        <table className="w-full border-collapse text-sm text-zinc-200">
+          {header && (
+            <thead>
+              <tr>
+                {header.map((cell, ci) => (
+                  <th
+                    key={`${tableKey}-head-${ci}`}
+                    className="border border-zinc-800 bg-zinc-900 px-3 py-2 text-left font-semibold"
+                  >
+                    {renderInlineMarkdown(cell, `${tableKey}-head-${ci}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          )}
+          <tbody>
+            {rows.map((row, ri) => (
+              <tr key={`${tableKey}-row-${ri}`} className="border-t border-zinc-800">
+                {row.map((cell, ci) => (
+                  <td
+                    key={`${tableKey}-cell-${ri}-${ci}`}
+                    className="border border-zinc-800 px-3 py-2 align-top"
+                  >
+                    {renderInlineMarkdown(cell, `${tableKey}-cell-${ri}-${ci}`)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+
+    blockIndex += 1
+    tableBuffer = null
+  }
+
   for (const line of lines) {
     const trimmedLine = line.trim()
 
+    // CODE BLOCK MODU
     if (inCodeBlock) {
       if (trimmedLine.startsWith("```") || trimmedLine.startsWith("~~~")) {
         flushCode()
@@ -327,20 +387,65 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       continue
     }
 
+    // Kod bloğu başlangıcı
     if (trimmedLine.startsWith("```") || trimmedLine.startsWith("~~~")) {
       flushList()
       flushQuote()
+      flushTable()
       inCodeBlock = true
       codeBuffer = []
       continue
     }
 
+    // Boş satır
     if (!trimmedLine) {
       flushList()
       flushQuote()
+      flushTable()
       continue
     }
 
+    // TABLO satırı mı?
+    const isTableRow = /^\|(.+)\|$/.test(trimmedLine)
+    if (isTableRow) {
+      // |---|---| ayırıcı satır mı?
+      const isSeparator = /^\|\s*(:?-+:?\s*\|)+\s*$/.test(trimmedLine)
+
+      if (isSeparator) {
+        // header sonrası separator satırı: sadece yutuyoruz
+        if (!tableBuffer) {
+          // header yoksa görmezden gel
+        }
+        continue
+      }
+
+      // gerçek hücreler
+      const cells = trimmedLine
+        .split("|")
+        .slice(1, -1)
+        .map((c) => c.trim())
+
+      // tablo ilk defa başlıyorsa: önce diğer blokları flush et
+      if (!tableBuffer) {
+        flushList()
+        flushQuote()
+        flushCode()
+        tableBuffer = {
+          header: cells,
+          rows: [],
+        }
+      } else {
+        // mevcut tabloya satır ekle
+        tableBuffer.rows.push(cells)
+      }
+
+      continue
+    } else {
+      // tablo bitiyorsa flush et
+      flushTable()
+    }
+
+    // QUOTE satırı
     if (trimmedLine.startsWith(">")) {
       flushList()
       if (!quoteBuffer) {
@@ -352,17 +457,21 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
 
     flushQuote()
 
+    // BAŞLIK
     const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/)
     if (headingMatch) {
       flushList()
       const level = Math.min(headingMatch[1].length, 3)
       const content = headingMatch[2].trim()
-      const sizeClass = level === 1 ? "text-xl" : level === 2 ? "text-lg" : "text-base"
+      const sizeClass =
+        level === 1 ? "text-xl" : level === 2 ? "text-lg" : "text-base"
 
       blocks.push(
         <h4
           key={`md-heading-${blockIndex}`}
-          className={`font-semibold text-white ${sizeClass !== "text-base" ? sizeClass : ""} leading-tight`}
+          className={`font-semibold text-white ${
+            sizeClass !== "text-base" ? sizeClass : ""
+          } leading-tight`}
         >
           {renderInlineMarkdown(content, `heading-${blockIndex}`)}
         </h4>
@@ -372,6 +481,7 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       continue
     }
 
+    // BULLET list
     if (/^[-*+]\s+/.test(trimmedLine)) {
       const item = trimmedLine.replace(/^[-*+]\s+/, "")
       if (!listBuffer || listBuffer.ordered) {
@@ -382,6 +492,7 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       continue
     }
 
+    // NUMARALI list
     if (/^\d+\.\s+/.test(trimmedLine)) {
       const item = trimmedLine.replace(/^\d+\.\s+/, "")
       if (!listBuffer || !listBuffer.ordered) {
@@ -392,13 +503,16 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       continue
     }
 
+    // HR (---)
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmedLine)) {
       flushList()
+      flushTable()
       blocks.push(<hr key={`md-hr-${blockIndex}`} className="border-zinc-800" />)
       blockIndex += 1
       continue
     }
 
+    // Normal paragraf
     flushList()
 
     blocks.push(
@@ -410,12 +524,14 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
     blockIndex += 1
   }
 
+  // Loop bitince kalan buffer'ları flush et
   if (inCodeBlock) {
     flushCode()
   }
 
   flushList()
   flushQuote()
+  flushTable()
 
   if (blocks.length === 0) {
     return [
@@ -629,16 +745,16 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         {/* Header */}
         <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-         <div className="flex items-center gap-2">
-                <Image
-                  src="/logo.png"
-                  alt="Fenomen Logo"
-                  width={40}
-                  height={40}
-                  className="h-8 w-28 object-contain"
-                  priority
-                />
-              </div>
+            <div className="flex items-center gap-2">
+              <Image
+                src="/logo.png"
+                alt="Fenomen Logo"
+                width={40}
+                height={40}
+                className="h-8 w-28 object-contain"
+                priority
+              />
+            </div>
 
             <Button
               onClick={handleLogout}
