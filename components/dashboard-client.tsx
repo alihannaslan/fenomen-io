@@ -1,6 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -82,7 +88,11 @@ const formatPercent = (value?: number | null) => {
 //  ONBOARDING (TikTok username input ekranı)
 // --------------------------------------------------------
 
-const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => Promise<void> | void }) => {
+const UsernameOnboarding = ({
+  onSubmit,
+}: {
+  onSubmit: (username: string) => Promise<void> | void
+}) => {
   const [username, setUsername] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -102,11 +112,14 @@ const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => Prom
       setError("Kullanıcı adı sadece harf, rakam, nokta ve alt çizgi içerebilir.")
       return
     }
+
     setLoading(true)
     try {
       await onSubmit(clean)
     } catch (err: any) {
-      const message = err?.message ? String(err.message) : "Analiz başlatılamadı."
+      const message = err?.message
+        ? String(err.message)
+        : "Analiz başlatılamadı."
       setError(message)
     } finally {
       setLoading(false)
@@ -117,12 +130,15 @@ const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => Prom
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="w-full max-w-lg">
         <div className="mb-6 text-center">
-          <p className="text-sm uppercase tracking-wide text-zinc-500">Adım 1 / 2</p>
+          <p className="text-sm uppercase tracking-wide text-zinc-500">
+            Adım 1 / 2
+          </p>
           <h1 className="mt-2 text-2xl font-semibold text-white">
             TikTok profilini analiz edelim
           </h1>
           <p className="mt-2 text-sm text-zinc-400">
-            Profil skorun, büyüme yol haritan ve içerik fikirlerin birkaç dakika içinde hazır olsun.
+            Profil skorun, büyüme yol haritan ve içerik fikirlerin birkaç dakika
+            içinde hazır olsun.
           </p>
         </div>
 
@@ -159,7 +175,8 @@ const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => Prom
           </button>
 
           <p className="text-[11px] text-zinc-500 text-center mt-2">
-            Şu an sadece TikTok profiliyle çalışıyoruz. Kullanıcı adını girdiğinde analiz birkaç dakika içinde hazırlanır.
+            Şu an sadece TikTok profiliyle çalışıyoruz. Kullanıcı adını girdiğinde
+            analiz birkaç dakika içinde hazırlanır.
           </p>
         </form>
       </div>
@@ -168,14 +185,15 @@ const UsernameOnboarding = ({ onSubmit }: { onSubmit: (username: string) => Prom
 }
 
 // --------------------------------------------------------
-//  Markdown renderer (inline + block + table support)
+//  Markdown renderer
 // --------------------------------------------------------
 
 const renderInlineMarkdown = (text: string, keyBase: string): ReactNode[] => {
   if (!text) return []
 
   const nodes: ReactNode[] = []
-  const tokenRegex = /\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)/g
+  const tokenRegex =
+    /\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)/g
   let lastIndex = 0
   let matchIndex = 0
 
@@ -216,7 +234,10 @@ const renderInlineMarkdown = (text: string, keyBase: string): ReactNode[] => {
           rel="noopener noreferrer"
           className="text-[#e78a53] underline-offset-2 hover:underline"
         >
-          {renderInlineMarkdown(match[4], `${keyBase}-link-label-${matchIndex}`)}
+          {renderInlineMarkdown(
+            match[4],
+            `${keyBase}-link-label-${matchIndex}`
+          )}
         </a>
       )
     }
@@ -253,10 +274,16 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
     const listClass = listBuffer.ordered ? "list-decimal" : "list-disc"
 
     blocks.push(
-      <ListTag key={listKey} className={`${listClass} space-y-2 pl-5 text-zinc-200`}>
+      <ListTag
+        key={listKey}
+        className={`${listClass} space-y-2 pl-5 text-zinc-200`}
+      >
         {listBuffer.items.map((item, idx) => (
           <li key={`${listKey}-item-${idx}`} className="leading-relaxed">
-            {renderInlineMarkdown(item.trim(), `${listKey}-item-${idx}`)}
+            {renderInlineMarkdown(
+              item.trim(),
+              `${listKey}-item-${idx}`
+            )}
           </li>
         ))}
       </ListTag>
@@ -283,13 +310,22 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
       >
         {paragraphs.length > 0
           ? paragraphs.map((paragraph, idx) => (
-              <p key={`${quoteKey}-p-${idx}`} className="leading-relaxed italic">
-                {renderInlineMarkdown(paragraph, `${quoteKey}-p-${idx}`)}
+              <p
+                key={`${quoteKey}-p-${idx}`}
+                className="leading-relaxed italic"
+              >
+                {renderInlineMarkdown(
+                  paragraph,
+                  `${quoteKey}-p-${idx}`
+                )}
               </p>
             ))
           : (
             <p className="leading-relaxed italic">
-              {renderInlineMarkdown(quoteBuffer.join(" "), `${quoteKey}-p-0`)}
+              {renderInlineMarkdown(
+                quoteBuffer.join(" "),
+                `${quoteKey}-p-0`
+              )}
             </p>
             )}
       </blockquote>
@@ -337,7 +373,10 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
                     key={`${tableKey}-head-${ci}`}
                     className="border border-zinc-800 bg-zinc-900 px-3 py-2 text-left font-semibold"
                   >
-                    {renderInlineMarkdown(cell, `${tableKey}-head-${ci}`)}
+                    {renderInlineMarkdown(
+                      cell,
+                      `${tableKey}-head-${ci}`
+                    )}
                   </th>
                 ))}
               </tr>
@@ -345,13 +384,19 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
           )}
           <tbody>
             {rows.map((row, ri) => (
-              <tr key={`${tableKey}-row-${ri}`} className="border-t border-zinc-800">
+              <tr
+                key={`${tableKey}-row-${ri}`}
+                className="border-t border-zinc-800"
+              >
                 {row.map((cell, ci) => (
                   <td
                     key={`${tableKey}-cell-${ri}-${ci}`}
                     className="border border-zinc-800 px-3 py-2 align-top"
                   >
-                    {renderInlineMarkdown(cell, `${tableKey}-cell-${ri}-${ci}`)}
+                    {renderInlineMarkdown(
+                      cell,
+                      `${tableKey}-cell-${ri}-${ci}`
+                    )}
                   </td>
                 ))}
               </tr>
@@ -397,7 +442,8 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
 
     const isTableRow = /^\|(.+)\|$/.test(trimmedLine)
     if (isTableRow) {
-      const isSeparator = /^\|\s*(:?-+:?\s*\|)+\s*$/.test(trimmedLine)
+      const isSeparator =
+        /^\|\s*(:?-+:?\s*\|)+\s*$/.test(trimmedLine)
 
       if (isSeparator) {
         if (!tableBuffer) {
@@ -454,7 +500,10 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
             sizeClass !== "text-base" ? sizeClass : ""
           } leading-tight`}
         >
-          {renderInlineMarkdown(content, `heading-${blockIndex}`)}
+          {renderInlineMarkdown(
+            content,
+            `heading-${blockIndex}`
+          )}
         </h4>
       )
 
@@ -485,7 +534,12 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmedLine)) {
       flushList()
       flushTable()
-      blocks.push(<hr key={`md-hr-${blockIndex}`} className="border-zinc-800" />)
+      blocks.push(
+        <hr
+          key={`md-hr-${blockIndex}`}
+          className="border-zinc-800"
+        />
+      )
       blockIndex += 1
       continue
     }
@@ -493,8 +547,14 @@ const convertMarkdownToReact = (markdown: string): ReactNode[] => {
     flushList()
 
     blocks.push(
-      <p key={`md-p-${blockIndex}`} className="leading-relaxed">
-        {renderInlineMarkdown(trimmedLine, `paragraph-${blockIndex}`)}
+      <p
+        key={`md-p-${blockIndex}`}
+        className="leading-relaxed"
+      >
+        {renderInlineMarkdown(
+          trimmedLine,
+          `paragraph-${blockIndex}`
+        )}
       </p>
     )
 
@@ -557,7 +617,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     }
   }
 
-  // ✅ Artık /api/profile yerine /api/result/<username> çağırıyoruz
+  // ✅ KV'den profil çeken fonksiyon
   const fetchProfile = useCallback(
     async (explicitUsername?: string | null) => {
       if (!user && !explicitUsername) return null
@@ -574,18 +634,25 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           u.tiktok_username
 
         if (!baseUsername) {
-          setError("Kullanıcı adı bulunamadı. Lütfen TikTok kullanıcı adını gir.")
+          setError(
+            "Kullanıcı adı bulunamadı. Lütfen TikTok kullanıcı adını gir."
+          )
           return null
         }
 
-        const cleanUsername = String(baseUsername).replace(/^@/, "").trim()
+        const cleanUsername = String(baseUsername)
+          .replace(/^@/, "")
+          .trim()
 
-        const res = await fetch(`/api/result/${encodeURIComponent(cleanUsername)}`, {
-          cache: "no-store",
-        })
+        const res = await fetch(
+          `/api/result/${encodeURIComponent(cleanUsername)}`,
+          {
+            cache: "no-store",
+          }
+        )
 
         if (res.status === 404) {
-          // Henüz analiz yoksa onboarding görünsün, hata göstermeyelim
+          // KV'de henüz analiz yok → onboarding görünecek
           setKvData(null)
           return null
         }
@@ -596,7 +663,9 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           try {
             const data = (await res.json()) as unknown
             if (data && typeof data === "object" && "error" in data) {
-              message = String((data as { error: unknown }).error)
+              message = String(
+                (data as { error: unknown }).error
+              )
             }
           } catch {
             // ignore
@@ -631,13 +700,68 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     [user]
   )
 
+  // İlk açılışta KV'den çek
   useEffect(() => {
     fetchProfile().catch(() => undefined)
   }, [fetchProfile])
 
-  // onboarding submit → analizi başlat
+  // Username girildiğinde:
+  // 1) KV'de var mı diye bak
+  // 2) Yoksa analiz başlat
   const handleUsernameSubmit = async (cleanUsername: string) => {
     setError(null)
+
+    // 1) KV pre-check
+    try {
+      const check = await fetch(
+        `/api/result/${encodeURIComponent(cleanUsername)}`,
+        {
+          cache: "no-store",
+        }
+      )
+
+      if (check.ok) {
+        // KV'de veri VAR → direkt dashboard doldur
+        const profile = (await check.json()) as KVProfile
+        const u: any = user || {}
+
+        const newData = {
+          email: user?.email ?? "",
+          user: {
+            id: (u.userId || u.id || "") as string,
+            email: user?.email ?? "",
+            name: u.name as string | undefined,
+            username: cleanUsername,
+          },
+          profile,
+        }
+
+        setKvData(newData)
+        return
+      }
+
+      if (check.status !== 404) {
+        let message = `HTTP ${check.status}`
+        try {
+          const data = (await check.json()) as unknown
+          if (data && typeof data === "object" && "error" in data) {
+            message = String(
+              (data as { error: unknown }).error
+            )
+          }
+        } catch {
+          // ignore
+        }
+        setError(message)
+        throw new Error(message)
+      }
+      // 404 ise KV'de yok → aşağıda analiz başlat
+    } catch (err) {
+      console.error("KV pre-check error:", err)
+      // yine de analiz başlatmayı deneyeceğiz
+    }
+
+    // 2) Analiz başlat
     const res = await fetch("/api/start-analysis", {
       method: "POST",
       headers: {
@@ -651,34 +775,43 @@ export default function DashboardClient({ user }: DashboardClientProps) {
       try {
         const data = (await res.json()) as unknown
         if (data && typeof data === "object" && "error" in data) {
-          message = String((data as { error: unknown }).error)
+          message = String(
+            (data as { error: unknown }).error
+          )
         }
       } catch {
-        // ignore json parse errors
+        // ignore
       }
       setError(message)
       throw new Error(message)
     }
 
-    // ✅ Analiz başlattıktan sonra bu username ile KV'den çek
+    // Analiz başlatıldı → bu username ile KV'den çekmeye başla
     await fetchProfile(cleanUsername)
   }
 
   const profileStatus = kvData?.profile?.status
-  const username = kvData?.user?.username || kvData?.profile?.username
+  const username =
+    kvData?.user?.username || kvData?.profile?.username
 
-  // Analiz sonucu hazır olana kadar KV'yi tekrar tekrar çek
-  useEffect(() => {
-    if (!username) return
-    const pendingStates = new Set(["pending", "analysis_running"])
-    if (!profileStatus || !pendingStates.has(profileStatus)) return
+  // Analiz loading durumları
+  const loadingStatuses = useMemo(
+    () =>
+      new Set([
+        "pending",
+        "analysis_running",
+        "paid",
+        "awaiting_payment",
+      ]),
+    []
+  )
+  const isAnalysisLoading = profileStatus
+    ? loadingStatuses.has(profileStatus)
+    : false
 
-    const id = setInterval(() => {
-      fetchProfile(username).catch(() => undefined)
-    }, 10000)
-
-    return () => clearInterval(id)
-  }, [profileStatus, username, fetchProfile])
+  // KV'de hiç data yoksa onboarding göster
+  const showOnboarding =
+    !kvLoading && !kvData && !isAnalysisLoading
 
   const formattedDate = useMemo(
     () =>
@@ -707,7 +840,9 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         transition={{ duration: 0.5, delay }}
       >
         <Card className="bg-zinc-900/50 border-zinc-800 p-6">
-          <h3 className="text-xl font-semibold text-white mb-4">{title}</h3>
+          <h3 className="text-xl font-semibold text-white mb-4">
+            {title}
+          </h3>
           <MarkdownRenderer text={text} />
         </Card>
       </motion.div>
@@ -715,7 +850,9 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   }
 
   const bright: BrightDataProfile | undefined =
-    (kvData?.profile as unknown as { brightdata_raw?: BrightDataProfile })?.brightdata_raw
+    (kvData?.profile as unknown as {
+      brightdata_raw?: BrightDataProfile
+    })?.brightdata_raw
 
   const profileResult = kvData?.profile?.result
 
@@ -726,10 +863,13 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   const likeER = bright?.like_engagement_rate ?? null
   const commentER = bright?.comment_engagement_rate ?? null
 
-  const projectedFollowers = currentFollowers ? Math.round(currentFollowers * 1.2) : null
-  const growthDelta = currentFollowers && projectedFollowers
-    ? projectedFollowers - currentFollowers
+  const projectedFollowers = currentFollowers
+    ? Math.round(currentFollowers * 1.2)
     : null
+  const growthDelta =
+    currentFollowers && projectedFollowers
+      ? projectedFollowers - currentFollowers
+      : null
 
   const profilePicUrl =
     kvData?.profile?.profile_pic_url ||
@@ -737,9 +877,22 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     bright?.profile_pic_url ||
     undefined
 
-  const showOnboarding = !kvLoading && !kvData?.profile?.username
-  const loadingStatuses = useMemo(() => new Set(["pending", "analysis_running", "paid", "awaiting_payment"]), [])
-  const isAnalysisLoading = profileStatus ? loadingStatuses.has(profileStatus) : false
+  // Analiz pending ise periyodik olarak KV'den yeniden çek
+  useEffect(() => {
+    if (!username) return
+    const pendingStates = new Set([
+      "pending",
+      "analysis_running",
+    ])
+    if (!profileStatus || !pendingStates.has(profileStatus))
+      return
+
+    const id = setInterval(() => {
+      fetchProfile(username).catch(() => undefined)
+    }, 10000)
+
+    return () => clearInterval(id)
+  }, [profileStatus, username, fetchProfile])
 
   return (
     <div className="min-h-screen bg-black">
@@ -775,11 +928,15 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {error && !showOnboarding && !isAnalysisLoading && (
-            <p className="mb-4 text-sm text-red-400">Hata: {error}</p>
+            <p className="mb-4 text-sm text-red-400">
+              Hata: {error}
+            </p>
           )}
 
           {showOnboarding && (
-            <UsernameOnboarding onSubmit={handleUsernameSubmit} />
+            <UsernameOnboarding
+              onSubmit={handleUsernameSubmit}
+            />
           )}
 
           {!showOnboarding && isAnalysisLoading && (
@@ -790,14 +947,15 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                   Analiz hazırlanıyor…
                 </h2>
                 <p className="text-sm text-zinc-400 max-w-md">
-                  TikTok profil verilerini topluyor, içerik performansını analiz ediyor ve büyüme
-                  yol haritanı oluşturuyoruz. Bu işlem genellikle 1–3 dakika sürer.
+                  TikTok profil verilerini topluyor, içerik performansını
+                  analiz ediyor ve büyüme yol haritanı oluşturuyoruz. Bu
+                  işlem genellikle 1–3 dakika sürer.
                 </p>
               </div>
             </div>
           )}
 
-          {!showOnboarding && !isAnalysisLoading && (
+          {!showOnboarding && !isAnalysisLoading && kvData && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -805,29 +963,52 @@ export default function DashboardClient({ user }: DashboardClientProps) {
             >
               <div className="mb-8">
                 <h1 className="text-4xl font-bold text-white mb-2">
-                  Hoş geldin{user.name ? `, ${user.name}` : ""}!
-                  {username ? <span className="ml-2 text-zinc-400 text-2xl">(@{username})</span> : null}
+                  Hoş geldin
+                  {user.name ? `, ${user.name}` : ""}!
+                  {username && (
+                    <span className="ml-2 text-zinc-400 text-2xl">
+                      (@{username})
+                    </span>
+                  )}
                 </h1>
                 <p className="text-zinc-400 text-lg">
-                  TikTok hesabının bugünkü durumu ve 6 aylık büyüme yolculuğu burada.
+                  TikTok hesabının bugünkü durumu ve 6 aylık büyüme
+                  yolculuğu burada.
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
                   <span>{formattedDate}</span>
-                  { (user as any)?.userId && (
+                  {(user as any)?.userId && (
                     <span className="text-zinc-600">
-                      Kullanıcı ID: <span className="font-mono">#{String((user as any).userId).substring(0, 8)}</span>
+                      Kullanıcı ID:{" "}
+                      <span className="font-mono">
+                        #
+                        {String(
+                          (user as any).userId
+                        ).substring(0, 8)}
+                      </span>
                     </span>
                   )}
                 </div>
-                {kvLoading && <p className="text-sm text-zinc-500 mt-2">KV verisi yükleniyor…</p>}
-                {error && <p className="text-sm text-red-400 mt-2">Hata: {error}</p>}
+                {kvLoading && (
+                  <p className="text-sm text-zinc-500 mt-2">
+                    KV verisi yükleniyor…
+                  </p>
+                )}
+                {error && (
+                  <p className="text-sm text-red-400 mt-2">
+                    Hata: {error}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.05 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: 0.05,
+                  }}
                 >
                   <Card className="bg-zinc-900/60 border-zinc-800 p-6 h-full flex flex-col">
                     <div className="flex items-start justify-between gap-2">
@@ -836,7 +1017,9 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                           Takipçi & Büyüme Yolculuğu
                         </p>
                         <p className="text-2xl font-bold text-white">
-                          {formatCompactNumber(currentFollowers)}
+                          {formatCompactNumber(
+                            currentFollowers
+                          )}
                         </p>
                         <p className="text-xs text-zinc-500 mt-1">
                           Şu anki takipçi sayın
@@ -850,15 +1033,23 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                     {projectedFollowers && (
                       <div className="mt-4 border-t border-zinc-800 pt-3">
                         <p className="text-[11px] text-zinc-400 mb-1">
-                          Roadmap&apos;i uygularsan tahmini 6 ay projeksiyonu:
+                          Roadmap&apos;i uygularsan tahmini 6 ay
+                          projeksiyonu:
                         </p>
                         <div className="flex items-baseline gap-2">
                           <span className="text-base font-semibold text-[#e78a53]">
-                            {formatCompactNumber(projectedFollowers)}
+                            {formatCompactNumber(
+                              projectedFollowers
+                            )}
                           </span>
                           {growthDelta && (
                             <span className="text-xs text-green-400">
-                              (+{formatCompactNumber(growthDelta)})
+                              (
+                              +
+                              {formatCompactNumber(
+                                growthDelta
+                              )}
+                              )
                             </span>
                           )}
                         </div>
@@ -870,14 +1061,19 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: 0.1,
+                  }}
                 >
                   <Card className="bg-zinc-900/60 border-zinc-800 p-6 h-full flex flex-col">
                     <p className="text-zinc-400 text-xs uppercase tracking-wide mb-1">
                       Ortalama Etkileşim Oranı
                     </p>
                     <p className="text-2xl font-bold text-white">
-                      {avgEngagement ? formatPercent(avgEngagement) : "-"}
+                      {avgEngagement
+                        ? formatPercent(avgEngagement)
+                        : "-"}
                     </p>
                     <p className="text-xs text-zinc-500 mt-1">
                       Son dönem genel ortalama (like + yorum)
@@ -886,13 +1082,17 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                       <div>
                         <p className="mb-0.5">Like ER</p>
                         <p className="text-xs text-zinc-200">
-                          {likeER ? formatPercent(likeER) : "-"}
+                          {likeER
+                            ? formatPercent(likeER)
+                            : "-"}
                         </p>
                       </div>
                       <div>
                         <p className="mb-0.5">Yorum ER</p>
                         <p className="text-xs text-zinc-200">
-                          {commentER ? formatPercent(commentER) : "-"}
+                          {commentER
+                            ? formatPercent(commentER)
+                            : "-"}
                         </p>
                       </div>
                     </div>
@@ -902,7 +1102,10 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.15 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: 0.15,
+                  }}
                 >
                   <Card className="bg-zinc-900/60 border-zinc-800 p-6 h-full flex flex-col">
                     <p className="text-zinc-400 text-xs uppercase tracking-wide mb-1">
@@ -926,7 +1129,10 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: 0.2,
+                  }}
                 >
                   <Card className="bg-zinc-900/60 border-zinc-800 p-6 h-full flex flex-col justify-between">
                     <div>
@@ -934,10 +1140,13 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                         Hesap Durumu
                       </p>
                       <p className="text-2xl font-bold text-green-400">
-                        {profileStatus === "done" ? "Analiz Hazır" : "Aktif"}
+                        {profileStatus === "done"
+                          ? "Analiz Hazır"
+                          : "Aktif"}
                       </p>
                       <p className="text-xs text-zinc-500 mt-1">
-                        Fenomen analiz sistemi ile eşleştirildi.
+                        Fenomen analiz sistemi ile
+                        eşleştirildi.
                       </p>
                     </div>
                     <div className="mt-4 border-t border-zinc-800 pt-3 text-[11px] text-zinc-500 space-y-1">
@@ -945,13 +1154,17 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                         <p>
                           Son KV güncellemesi:{" "}
                           <span className="text-zinc-300">
-                            {new Date(kvData.profile.ts).toLocaleString("tr-TR")}
+                            {new Date(
+                              kvData.profile.ts
+                            ).toLocaleString("tr-TR")}
                           </span>
                         </p>
                       )}
                       <p>
                         E-posta:{" "}
-                        <span className="text-zinc-300">{kvData?.email}</span>
+                        <span className="text-zinc-300">
+                          {kvData?.email}
+                        </span>
                       </p>
                     </div>
                   </Card>
@@ -962,7 +1175,10 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.25 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: 0.25,
+                  }}
                   className="lg:col-span-1"
                 >
                   <Card className="bg-zinc-900/60 border-zinc-800 p-6 h-full flex flex-col gap-6">
@@ -970,7 +1186,11 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                       {profilePicUrl ? (
                         <img
                           src={profilePicUrl}
-                          alt={bright?.nickname || username || "Profil fotoğrafı"}
+                          alt={
+                            bright?.nickname ||
+                            username ||
+                            "Profil fotoğrafı"
+                          }
                           className="h-20 w-20 rounded-full border border-zinc-700 object-cover"
                         />
                       ) : (
@@ -980,12 +1200,18 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                       )}
 
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-zinc-400 mb-0.5">TikTok Profilin</p>
+                        <p className="text-sm text-zinc-400 mb-0.5">
+                          TikTok Profilin
+                        </p>
                         <p className="text-lg font-semibold text-white truncate">
-                          {bright?.nickname || username || "-"}
+                          {bright?.nickname ||
+                            username ||
+                            "-"}
                         </p>
                         {username && (
-                          <p className="text-sm text-zinc-500">@{username}</p>
+                          <p className="text-sm text-zinc-500">
+                            @{username}
+                          </p>
                         )}
                         {bright?.biography && (
                           <p className="mt-2 text-xs text-zinc-300 line-clamp-3">
@@ -1017,45 +1243,54 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                       </div>
                     </div>
 
-                    {bright?.top_videos && bright.top_videos.length > 0 && (
-                      <div className="border-t border-zinc-800 pt-4">
-                        <p className="text-xs font-medium text-zinc-300 mb-3">
-                          Hero içeriklerin (son dönem)
-                        </p>
-                        <div className="space-y-3">
-                          {bright.top_videos.slice(0, 3).map((video) => (
-                            <a
-                              key={video.video_id}
-                              href={video.video_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="flex items-center gap-3 group"
-                            >
-                              {video.cover_image ? (
-                                <img
-                                  src={video.cover_image}
-                                  alt=""
-                                  className="h-12 w-20 rounded-md object-cover border border-zinc-800 group-hover:border-[#e78a53]/60 transition-colors"
-                                />
-                              ) : (
-                                <div className="h-12 w-20 rounded-md bg-zinc-900 border border-zinc-800 grid place-items-center text-xs text-zinc-500">
-                                  Video
-                                </div>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-zinc-300 truncate group-hover:text-white transition-colors">
-                                  {video.video_id}
-                                </p>
-                                <p className="text-[11px] text-zinc-500 mt-0.5">
-                                  {formatCompactNumber(video.playcount)} izlenme ·{" "}
-                                  {formatCompactNumber(video.diggcount)} like
-                                </p>
-                              </div>
-                            </a>
-                          ))}
+                    {bright?.top_videos &&
+                      bright.top_videos.length > 0 && (
+                        <div className="border-t border-zinc-800 pt-4">
+                          <p className="text-xs font-medium text-zinc-300 mb-3">
+                            Hero içeriklerin (son dönem)
+                          </p>
+                          <div className="space-y-3">
+                            {bright.top_videos
+                              .slice(0, 3)
+                              .map((video) => (
+                                <a
+                                  key={video.video_id}
+                                  href={video.video_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex items-center gap-3 group"
+                                >
+                                  {video.cover_image ? (
+                                    <img
+                                      src={video.cover_image}
+                                      alt=""
+                                      className="h-12 w-20 rounded-md object-cover border border-zinc-800 group-hover:border-[#e78a53]/60 transition-colors"
+                                    />
+                                  ) : (
+                                    <div className="h-12 w-20 rounded-md bg-zinc-900 border border-zinc-800 grid place-items-center text-xs text-zinc-500">
+                                      Video
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-zinc-300 truncate group-hover:text-white transition-colors">
+                                      {video.video_id}
+                                    </p>
+                                    <p className="text-[11px] text-zinc-500 mt-0.5">
+                                      {formatCompactNumber(
+                                        video.playcount
+                                      )}{" "}
+                                      izlenme ·{" "}
+                                      {formatCompactNumber(
+                                        video.diggcount
+                                      )}{" "}
+                                      like
+                                    </p>
+                                  </div>
+                                </a>
+                              ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </Card>
                 </motion.div>
 
@@ -1063,12 +1298,16 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <SectionCard
                       title="Profil Özeti"
-                      text={profileResult?.profile_summary}
+                      text={
+                        profileResult?.profile_summary
+                      }
                       delay={0.1}
                     />
                     <SectionCard
                       title="İçerik Performans Desenleri"
-                      text={profileResult?.content_patterns}
+                      text={
+                        profileResult?.content_patterns
+                      }
                       delay={0.15}
                     />
                   </div>
@@ -1102,12 +1341,16 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <SectionCard
                       title="Büyüme Projeksiyonu (6 Ay)"
-                      text={profileResult?.growth_projection}
+                      text={
+                        profileResult?.growth_projection
+                      }
                       delay={0.4}
                     />
                     <SectionCard
                       title="Genel Değerlendirme & Sonuç"
-                      text={profileResult?.final_summary}
+                      text={
+                        profileResult?.final_summary
+                      }
                       delay={0.45}
                     />
                   </div>
